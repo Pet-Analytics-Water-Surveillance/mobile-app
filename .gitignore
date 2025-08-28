@@ -140,9 +140,4 @@ fastlane/test_output
 !.gitignore
 !README.md
 
-# Block other files in root (encourage src structure)
-# Only block TS/JS files in root directory, not in src/
-/*.tsx
-/*.js
-/*.jsx
-!App.tsx
+
