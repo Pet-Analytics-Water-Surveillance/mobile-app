@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Calendar } from 'react-native-calendars'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../services/supabase'
+import type { Database } from '../../services/supabase'
 
 interface HydrationEvent {
   id: string
@@ -19,11 +20,22 @@ interface HydrationEvent {
   amount_ml: number
 }
 
+type Pet = Database['public']['Tables']['pets']['Row']
+
+type MarkedDateEntry = {
+  marked?: boolean
+  dotColor?: string
+  selected?: boolean
+  selectedColor?: string
+}
+
+type MarkedDatesMap = Record<string, MarkedDateEntry>
+
 export default function CalendarScreen() {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
-  const [markedDates, setMarkedDates] = useState({})
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
+  const [markedDates, setMarkedDates] = useState<MarkedDatesMap>({})
   const [dayEvents, setDayEvents] = useState<HydrationEvent[]>([])
-  const [pets, setPets] = useState([])
+  const [pets, setPets] = useState<Pet[]>([])
 
   useEffect(() => {
     loadMonthData()
@@ -34,8 +46,10 @@ export default function CalendarScreen() {
     loadDayEvents(selectedDate)
   }, [selectedDate])
 
-  const loadPets = async () => {
+  const loadPets = async (): Promise<void> => {
     const { data: { user } } = await supabase.auth.getUser()
+    if (!user?.id) return
+
     const { data: member } = await supabase
       .from('household_members')
       .select('household_id')
@@ -48,11 +62,11 @@ export default function CalendarScreen() {
         .select('*')
         .eq('household_id', member.household_id)
       
-      setPets(petsData || [])
+      setPets((petsData as Pet[]) || [])
     }
   }
 
-  const loadMonthData = async () => {
+  const loadMonthData = async (): Promise<void> => {
     const startOfMonth = new Date()
     startOfMonth.setDate(1)
     startOfMonth.setHours(0, 0, 0, 0)
@@ -69,8 +83,8 @@ export default function CalendarScreen() {
       .lte('timestamp', endOfMonth.toISOString())
 
     // Mark dates with events
-    const marked = {}
-    events?.forEach(event => {
+    const marked: MarkedDatesMap = {}
+    ;(events as Array<{ timestamp: string; pet_id: string }> | null)?.forEach(event => {
       const date = event.timestamp.split('T')[0]
       if (!marked[date]) {
         marked[date] = { marked: true, dotColor: '#2196F3' }
@@ -78,12 +92,12 @@ export default function CalendarScreen() {
     })
 
     // Mark selected date
-    marked[selectedDate] = { ...marked[selectedDate], selected: true, selectedColor: '#2196F3' }
+    marked[selectedDate] = { ...(marked[selectedDate] || {}), selected: true, selectedColor: '#2196F3' }
     
     setMarkedDates(marked)
   }
 
-  const loadDayEvents = async (date: string) => {
+  const loadDayEvents = async (date: string): Promise<void> => {
     const startOfDay = new Date(date)
     startOfDay.setHours(0, 0, 0, 0)
     
@@ -103,19 +117,31 @@ export default function CalendarScreen() {
       .lte('timestamp', endOfDay.toISOString())
       .order('timestamp', { ascending: false })
 
-    const formattedEvents = events?.map(e => ({
-      ...e,
-      pet_name: e.pets?.name || 'Unknown Pet'
-    })) || []
+    type EventRow = {
+      id: string
+      pet_id: string
+      timestamp: string
+      amount_ml: number
+      pets?: { name?: string } | null
+    }
+
+    const formattedEvents: HydrationEvent[] = ((events as EventRow[]) || []).map(e => ({
+      id: e.id,
+      pet_id: e.pet_id,
+      timestamp: e.timestamp,
+      amount_ml: e.amount_ml,
+      pet_name: e.pets?.name ?? 'Unknown Pet',
+    }))
 
     setDayEvents(formattedEvents)
   }
 
-  const onDayPress = (day: any) => {
+  type DayPress = { dateString: string }
+  const onDayPress = (day: DayPress) => {
     setSelectedDate(day.dateString)
     
     // Update marked dates
-    const newMarked = { ...markedDates }
+    const newMarked: MarkedDatesMap = { ...markedDates }
     Object.keys(newMarked).forEach(key => {
       if (newMarked[key].selected) {
         delete newMarked[key].selected
@@ -123,9 +149,9 @@ export default function CalendarScreen() {
       }
     })
     newMarked[day.dateString] = {
-      ...newMarked[day.dateString],
+      ...(newMarked[day.dateString] || {}),
       selected: true,
-      selectedColor: '#2196F3'
+      selectedColor: '#2196F3',
     }
     setMarkedDates(newMarked)
   }
@@ -140,7 +166,7 @@ export default function CalendarScreen() {
   const getPetColor = (petId: string) => {
     const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7']
     const index = pets.findIndex(p => p.id === petId)
-    return colors[index % colors.length]
+    return colors[Math.abs(index) % colors.length]
   }
 
   return (

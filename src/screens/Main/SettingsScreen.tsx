@@ -132,12 +132,6 @@ export default function SettingsScreen() {
                 />
               }
             />
-            <SettingItem
-              icon="water-outline"
-              title="Hydration Goals"
-              subtitle="Set daily water intake goals"
-              onPress={() => {}}
-            />
           </View>
         </View>
 
