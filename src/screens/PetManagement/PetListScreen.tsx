@@ -15,10 +15,26 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../../services/supabase'
 import { HouseholdService } from '../../services/HouseholdService'
 
+// Define Pet type
+interface Pet {
+  id: string
+  name: string
+  species: string
+  breed?: string
+  weight_kg: number
+  daily_water_goal_ml: number
+  photo_url?: string
+  thumbnail_url?: string
+  rfid_tag?: string
+  household_id: string
+  created_at: string
+  updated_at: string
+}
+
 export default function PetListScreen() {
   const navigation = useNavigation<any>()
-  const [pets, setPets] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [pets, setPets] = useState<Pet[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
 
   useEffect(() => {
     loadPets()
@@ -81,7 +97,7 @@ export default function PetListScreen() {
     )
   }
 
-  const renderPetItem = ({ item }: any) => {
+  const renderPetItem = ({ item }: { item: Pet }) => {
     console.log('Rendering pet item:', {
       name: item.name,
       photo_url: item.photo_url,
@@ -120,7 +136,7 @@ export default function PetListScreen() {
       <View style={styles.petInfo}>
         <Text style={styles.petName}>{item.name}</Text>
         <Text style={styles.petDetails}>
-          {item.species} • {item.weight_kg}kg • Goal: {item.daily_water_goal_ml}ml/day
+          {item.breed ? `${item.breed} • ` : ''}{item.weight_kg}kg • Goal: {item.daily_water_goal_ml}ml/day
         </Text>
         {item.rfid_tag && (
           <View style={styles.tagBadge}>
