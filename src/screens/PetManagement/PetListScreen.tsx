@@ -168,12 +168,14 @@ export default function PetListScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <FlatList
         data={pets}
         renderItem={renderPetItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="never"
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="paw-outline" size={64} color="#C0C0C0" />
@@ -205,15 +207,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FA',
   },
   listContent: {
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 80, // Space for FAB
   },
   petCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    padding: 15,
+    padding: 12,
     borderRadius: 12,
-    marginBottom: 15,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -227,7 +231,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E3F2FD',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: 12,
   },
   petImage: {
     width: 60,
@@ -278,7 +282,8 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: 'center',
-    marginTop: 100,
+    marginTop: 60,
+    paddingHorizontal: 20,
   },
   emptyText: {
     fontSize: 18,

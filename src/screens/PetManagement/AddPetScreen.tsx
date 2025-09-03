@@ -133,8 +133,8 @@ export default function AddPetScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.content}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="never">
         {/* Photo Section */}
         <View style={styles.photoSection}>
           <Text style={styles.sectionTitle}>Pet Photo</Text>
@@ -278,13 +278,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FA',
   },
   content: {
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingTop: 0,
   },
   photoSection: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
+    padding: 16,
+    marginBottom: 16,
+    marginTop: 16,
   },
   sectionTitle: {
     fontSize: 18,
@@ -339,11 +341,11 @@ const styles = StyleSheet.create({
   formSection: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
+    padding: 16,
+    marginBottom: 16,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   label: {
     fontSize: 14,
@@ -371,7 +373,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 16,
+    marginHorizontal: 0,
   },
   saveButtonText: {
     color: '#fff',
