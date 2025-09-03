@@ -69,6 +69,7 @@ export interface Database {
           weight_kg: number
           daily_water_goal_ml: number
           photo_url?: string
+          thumbnail_url?: string
           rfid_tag?: string
           household_id: string
           created_at: string
@@ -82,6 +83,7 @@ export interface Database {
           weight_kg: number
           daily_water_goal_ml: number
           photo_url?: string
+          thumbnail_url?: string
           rfid_tag?: string
           household_id: string
           created_at?: string
@@ -95,6 +97,7 @@ export interface Database {
           weight_kg?: number
           daily_water_goal_ml?: number
           photo_url?: string
+          thumbnail_url?: string
           rfid_tag?: string
           household_id?: string
           created_at?: string

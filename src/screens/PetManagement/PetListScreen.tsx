@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../../services/supabase'
+import { HouseholdService } from '../../services/HouseholdService'
 
 export default function PetListScreen() {
   const navigation = useNavigation<any>()
@@ -22,24 +24,43 @@ export default function PetListScreen() {
     loadPets()
   }, [])
 
-  const loadPets = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: member } = await supabase
-      .from('household_members')
-      .select('household_id')
-      .eq('user_id', user?.id)
-      .single()
+  // Reload pets when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadPets()
+    }, [])
+  )
 
-    if (member) {
-      const { data: petsData } = await supabase
+  const loadPets = async () => {
+    try {
+      console.log('Loading pets...')
+      setLoading(true)
+      
+      // Get household ID using the HouseholdService
+      const householdId = await HouseholdService.getOrCreateHousehold()
+      console.log('Household ID for pets:', householdId)
+      
+      // Load pets for this household
+      const { data: petsData, error } = await supabase
         .from('pets')
         .select('*')
-        .eq('household_id', member.household_id)
+        .eq('household_id', householdId)
         .order('created_at', { ascending: false })
       
+      if (error) {
+        console.error('Error loading pets:', error)
+        throw error
+      }
+      
+      console.log('Pets data:', petsData)
       setPets(petsData || [])
+    } catch (error) {
+      console.error('Load pets error:', error)
+      Alert.alert('Error', 'Failed to load pets')
+      setPets([])
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const deletePet = (petId: string, petName: string) => {
@@ -60,22 +81,41 @@ export default function PetListScreen() {
     )
   }
 
-  const renderPetItem = ({ item }: any) => (
-    <TouchableOpacity
-      style={styles.petCard}
-      onPress={() => navigation.navigate('PetEdit', { petId: item.id })}
-    >
-      <View style={styles.petAvatar}>
-        {item.photo_url ? (
-          <Image source={{ uri: item.photo_url }} style={styles.petImage} />
-        ) : (
-          <Ionicons 
-            name={item.species === 'cat' ? 'logo-octocat' : 'paw'} 
-            size={40} 
-            color="#2196F3" 
-          />
-        )}
-      </View>
+  const renderPetItem = ({ item }: any) => {
+    console.log('Rendering pet item:', {
+      name: item.name,
+      photo_url: item.photo_url,
+      thumbnail_url: item.thumbnail_url
+    })
+
+    return (
+      <TouchableOpacity
+        style={styles.petCard}
+        onPress={() => navigation.navigate('PetEdit', { petId: item.id })}
+      >
+        <View style={styles.petAvatar}>
+          {(item.thumbnail_url || item.photo_url) ? (
+            <Image 
+              source={{ uri: item.thumbnail_url || item.photo_url }} 
+              style={styles.petImage}
+              onError={(error) => {
+                console.log('Image load error:', error.nativeEvent.error)
+              }}
+              onLoadStart={() => {
+                console.log('Image loading started for:', item.name)
+              }}
+              onLoadEnd={() => {
+                console.log('Image loading ended for:', item.name)
+              }}
+            />
+          ) : (
+            <Ionicons 
+              name={item.species === 'cat' ? 'logo-octocat' : 'paw'} 
+              size={40} 
+              color="#2196F3" 
+            />
+          )}
+        </View>
       
       <View style={styles.petInfo}>
         <Text style={styles.petName}>{item.name}</Text>
@@ -97,7 +137,19 @@ export default function PetListScreen() {
         <Ionicons name="trash-outline" size={20} color="#FF3B30" />
       </TouchableOpacity>
     </TouchableOpacity>
-  )
+    )
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2196F3" />
+          <Text style={styles.loadingText}>Loading pets...</Text>
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -110,7 +162,13 @@ export default function PetListScreen() {
           <View style={styles.emptyState}>
             <Ionicons name="paw-outline" size={64} color="#C0C0C0" />
             <Text style={styles.emptyText}>No pets added yet</Text>
-            <Text style={styles.emptySubtext}>Add your first pet to start tracking</Text>
+            <Text style={styles.emptySubtext}>Add your first pet to start tracking their hydration</Text>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => navigation.navigate('PetAdd')}
+            >
+              <Text style={styles.addButtonText}>Add Pet</Text>
+            </TouchableOpacity>
           </View>
         }
       />
@@ -192,6 +250,16 @@ const styles = StyleSheet.create({
   deleteButton: {
     padding: 10,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
   emptyState: {
     alignItems: 'center',
     marginTop: 100,
@@ -206,6 +274,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     marginTop: 8,
+    textAlign: 'center',
+    marginHorizontal: 40,
+  },
+  addButton: {
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+    marginTop: 20,
+  },
+  addButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   fab: {
     position: 'absolute',
