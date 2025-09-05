@@ -11,6 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../services/supabase'
 import type { Database } from '../../services/supabase'
+import { useNavigation } from '@react-navigation/native'
+import type { HomeScreenNavigationProp } from '../../navigation/types'
 import PetHydrationCard from '../../components/specific/PetHydrationCard'
 import QuickStats from '../../components/specific/QuickStats'
 import RecentActivity from '../../components/specific/RecentActivity'
@@ -25,6 +27,7 @@ type TodayStats = {
 }
 
 export default function HomeScreen() {
+  const navigation = useNavigation<HomeScreenNavigationProp>()
   const [refreshing, setRefreshing] = useState(false)
   const [pets, setPets] = useState<Pet[]>([])
   const [household, setHousehold] = useState<Household | null>(null)
@@ -97,7 +100,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -108,7 +111,7 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Good Morning! 👋</Text>
-            <Text style={styles.householdName}>{household?.name || 'Dashboard'}</Text>
+            <Text style={styles.householdName}>{'Dashboard'}</Text>
           </View>
           <TouchableOpacity style={styles.notificationButton}>
             <Ionicons name="notifications-outline" size={24} color="#333" />
@@ -138,7 +141,15 @@ export default function HomeScreen() {
             ))}
             
             {/* Add Pet Card */}
-            <TouchableOpacity style={styles.addPetCard}>
+            <TouchableOpacity
+              style={styles.addPetCard}
+              onPress={() =>
+                navigation.navigate('Settings', {
+                  screen: 'PetAdd',
+                  params: { fromHome: true },
+                })
+              }
+            >
               <Ionicons name="add-circle-outline" size={48} color="#2196F3" />
               <Text style={styles.addPetText}>Add Pet</Text>
             </TouchableOpacity>
@@ -157,7 +168,10 @@ export default function HomeScreen() {
             <Ionicons name="add-outline" size={24} color="#fff" />
             <Text style={styles.actionButtonText}>Add Device</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.secondaryButton]}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.secondaryButton]}
+            onPress={() => navigation.navigate('Statistics')}
+          >
             <Ionicons name="bar-chart-outline" size={24} color="#2196F3" />
             <Text style={[styles.actionButtonText, { color: '#2196F3' }]}>View Stats</Text>
           </TouchableOpacity>
