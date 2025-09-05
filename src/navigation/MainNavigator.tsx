@@ -2,6 +2,7 @@ import React from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createStackNavigator } from '@react-navigation/stack'
 import { Ionicons } from '@expo/vector-icons'
+import { TouchableOpacity } from 'react-native'
 import HomeScreen from '../screens/Main/HomeScreen'
 import CalendarScreen from '../screens/Main/CalendarScreen'
 import StatisticsScreen from '../screens/Main/StatisticsScreen'
@@ -13,17 +14,24 @@ import DeviceScanScreen from '../screens/DeviceSetup/DeviceScanScreen'
 import WiFiSetupScreen from '../screens/DeviceSetup/WiFiSetupScreen'
 import SetupCompleteScreen from '../screens/DeviceSetup/SetupCompleteScreen'
 import { MainTabParamList, SettingsStackParamList } from './types'
+import AccountProfile from '../screens/Settings/AccountProfile'   // <-- add this at the top
+
 
 const Tab = createBottomTabNavigator<MainTabParamList>()
 const SettingsStack = createStackNavigator<SettingsStackParamList>()
 
 function SettingsNavigator() {
   return (
-    <SettingsStack.Navigator>
+    <SettingsStack.Navigator screenOptions={{ headerShown: true }}>
       <SettingsStack.Screen 
         name="SettingsList" 
         component={SettingsScreen}
-        options={{ title: 'Settings' }}
+        options={{ title: 'Settings', headerShown: false }}
+      />
+      <SettingsStack.Screen 
+        name="Profile"                          // <-- NEW SCREEN
+        component={AccountProfile}
+        options={{ title: 'Profile' }}
       />
       <SettingsStack.Screen 
         name="PetManagement" 
@@ -33,7 +41,30 @@ function SettingsNavigator() {
       <SettingsStack.Screen 
         name="PetAdd" 
         component={AddPetScreen}
-        options={{ title: 'Add Pet' }}
+        options={({ navigation, route }) => ({
+          title: 'Add Pet',
+          headerLeft: () => (
+            <TouchableOpacity
+              style={{ paddingHorizontal: 10 }}
+              onPress={() => {
+                const fromHome = (route.params as any)?.fromHome
+                if (fromHome) {
+                  // If opened from Home, reset Settings stack to root
+                  // then switch back to Home tab
+                  navigation.reset({ index: 0, routes: [{ name: 'SettingsList' }] })
+                  const parent = navigation.getParent() as any
+                  parent?.navigate('Home')
+                } else if (navigation.canGoBack()) {
+                  navigation.goBack()
+                } else {
+                  navigation.navigate('SettingsList')
+                }
+              }}
+            >
+              <Ionicons name="chevron-back" size={24} color="#2196F3" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <SettingsStack.Screen 
         name="PetEdit" 

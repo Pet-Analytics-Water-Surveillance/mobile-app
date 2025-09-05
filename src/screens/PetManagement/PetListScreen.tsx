@@ -96,7 +96,6 @@ export default function PetListScreen() {
       ]
     )
   }
-
   const renderPetItem = ({ item }: { item: Pet }) => {
     console.log('Rendering pet item:', {
       name: item.name,
@@ -140,7 +139,7 @@ export default function PetListScreen() {
         </Text>
         {item.rfid_tag && (
           <View style={styles.tagBadge}>
-            <Ionicons name="pricetag" size={12} color="#666" />
+            <Ionicons name={'pricetag' as any} size={12} color="#666" />
             <Text style={styles.tagText}>Tagged</Text>
           </View>
         )}

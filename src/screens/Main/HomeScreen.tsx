@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
   Text,
@@ -10,28 +10,44 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../services/supabase'
+import type { Database } from '../../services/supabase'
+import { useNavigation } from '@react-navigation/native'
+import type { HomeScreenNavigationProp } from '../../navigation/types'
 import PetHydrationCard from '../../components/specific/PetHydrationCard'
 import QuickStats from '../../components/specific/QuickStats'
 import RecentActivity from '../../components/specific/RecentActivity'
 
+type Pet = Database['public']['Tables']['pets']['Row']
+type Household = Database['public']['Tables']['households']['Row']
+
+type TodayStats = {
+  totalWater: number
+  activeDevices: number
+  alerts: number
+}
+
 export default function HomeScreen() {
+  const navigation = useNavigation<HomeScreenNavigationProp>()
   const [refreshing, setRefreshing] = useState(false)
-  const [pets, setPets] = useState([])
-  const [household, setHousehold] = useState(null)
-  const [todayStats, setTodayStats] = useState({
+  const [pets, setPets] = useState<Pet[]>([])
+  const [household, setHousehold] = useState<Household | null>(null)
+  const [todayStats, setTodayStats] = useState<TodayStats>({
     totalWater: 0,
     activeDevices: 0,
     alerts: 0,
   })
 
-  useEffect(() => {
-    loadDashboardData()
-  }, [])
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good Morning! 👋'
+    if (hour < 17) return 'Good Afternoon! 👋'
+    return 'Good Evening! 👋'
+  }
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     // Load household data
     const { data: { user } } = await supabase.auth.getUser()
-    const { data: memberData } = await supabase
+    const { data: memberData }: { data: { household_id: string; households: Household } | null } = await supabase
       .from('household_members')
       .select('household_id, households(*)')
       .eq('user_id', user?.id)
@@ -41,7 +57,7 @@ export default function HomeScreen() {
       setHousehold(memberData.households)
       
       // Load pets
-      const { data: petsData } = await supabase
+      const { data: petsData }: { data: Pet[] | null } = await supabase
         .from('pets')
         .select('*')
         .eq('household_id', memberData.household_id)
@@ -52,21 +68,21 @@ export default function HomeScreen() {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       
-      const { data: events } = await supabase
+      const { data: events }: { data: Array<{ amount_ml: number }> | null } = await supabase
         .from('hydration_events')
         .select('amount_ml')
         .gte('timestamp', today.toISOString())
       
-      const totalWater = events?.reduce((sum, e) => sum + e.amount_ml, 0) || 0
+      const totalWater = (events?.reduce((sum, e) => sum + e.amount_ml, 0)) || 0
       
-      const { data: devices } = await supabase
+      const { data: devices }: { data: Array<{ is_online: boolean }> | null } = await supabase
         .from('devices')
         .select('is_online')
         .eq('household_id', memberData.household_id)
       
-      const activeDevices = devices?.filter(d => d.is_online).length || 0
+      const activeDevices = devices?.filter((d) => d.is_online).length || 0
       
-      const { data: alerts } = await supabase
+      const { data: alerts }: { data: Array<{ id: string }> | null } = await supabase
         .from('hydration_alerts')
         .select('id')
         .eq('household_id', memberData.household_id)
@@ -78,7 +94,11 @@ export default function HomeScreen() {
         alerts: alerts?.length || 0,
       })
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    loadDashboardData()
+  }, [loadDashboardData])
 
   const onRefresh = async () => {
     setRefreshing(true)
@@ -87,8 +107,9 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -96,8 +117,8 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Good Morning! 👋</Text>
-            <Text style={styles.householdName}>{household?.name || 'Loading...'}</Text>
+            <Text style={styles.greeting}>{getGreeting()}</Text>
+            <Text style={styles.householdName}>Dashboard</Text>
           </View>
           <TouchableOpacity style={styles.notificationButton}>
             <Ionicons name="notifications-outline" size={24} color="#333" />
@@ -121,13 +142,26 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
           
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.petsScrollContainer}
+            style={styles.petsScrollView}
+          >
             {pets.map(pet => (
               <PetHydrationCard key={pet.id} pet={pet} />
             ))}
             
             {/* Add Pet Card */}
-            <TouchableOpacity style={styles.addPetCard}>
+            <TouchableOpacity
+              style={styles.addPetCard}
+              onPress={() =>
+                navigation.navigate('Settings', {
+                  screen: 'PetAdd',
+                  params: { fromHome: true },
+                })
+              }
+            >
               <Ionicons name="add-circle-outline" size={48} color="#2196F3" />
               <Text style={styles.addPetText}>Add Pet</Text>
             </TouchableOpacity>
@@ -135,7 +169,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Recent Activity */}
-        <View style={styles.section}>
+        <View style={[styles.section, styles.sectionBody]}>
           <Text style={styles.sectionTitle}>Recent Activity</Text>
           <RecentActivity />
         </View>
@@ -146,7 +180,10 @@ export default function HomeScreen() {
             <Ionicons name="add-outline" size={24} color="#fff" />
             <Text style={styles.actionButtonText}>Add Device</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.secondaryButton]}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.secondaryButton]}
+            onPress={() => navigation.navigate('Statistics')}
+          >
             <Ionicons name="bar-chart-outline" size={24} color="#2196F3" />
             <Text style={[styles.actionButtonText, { color: '#2196F3' }]}>View Stats</Text>
           </TouchableOpacity>
@@ -157,6 +194,9 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  scrollContent: {
+    paddingBottom: 32,
+  },
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',
@@ -200,6 +240,9 @@ const styles = StyleSheet.create({
   section: {
     marginVertical: 20,
   },
+  sectionBody: {
+    paddingHorizontal: 20,
+  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -215,6 +258,13 @@ const styles = StyleSheet.create({
   seeAll: {
     fontSize: 14,
     color: '#2196F3',
+  },
+  petsScrollView: {
+    marginHorizontal: -10, // Negative margin to offset card margins
+  },
+  petsScrollContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 5,
   },
   addPetCard: {
     width: 150,

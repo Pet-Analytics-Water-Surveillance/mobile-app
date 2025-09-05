@@ -162,7 +162,7 @@ export default function StatisticsScreen() {
   )
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>Hydration Statistics</Text>
         <TouchableOpacity>

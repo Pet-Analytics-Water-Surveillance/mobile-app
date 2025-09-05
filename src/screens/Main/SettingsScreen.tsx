@@ -56,7 +56,7 @@ export default function SettingsScreen() {
   )
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>Settings</Text>
       </View>
@@ -131,12 +131,6 @@ export default function SettingsScreen() {
                   thumbColor={darkMode ? '#4CAF50' : '#f4f3f4'}
                 />
               }
-            />
-            <SettingItem
-              icon="water-outline"
-              title="Hydration Goals"
-              subtitle="Set daily water intake goals"
-              onPress={() => {}}
             />
           </View>
         </View>

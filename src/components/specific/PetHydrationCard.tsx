@@ -33,7 +33,7 @@ export default function PetHydrationCard({ pet }: Props) {
       .order('timestamp', { ascending: false })
 
     if (data && data.length > 0) {
-      const total = data.reduce((sum, event) => sum + event.amount_ml, 0)
+      const total = data.reduce((sum: number, event: { amount_ml: number }) => sum + event.amount_ml, 0)
       setTodayTotal(total)
       setLastDrink(data[0].timestamp)
     }
@@ -95,7 +95,8 @@ export default function PetHydrationCard({ pet }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    width: 160,
+    width: 150,
+    height: 180,
     backgroundColor: '#fff',
     borderRadius: 15,
     padding: 15,
@@ -108,7 +109,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 12,
   },
   petImage: {
     width: 50,
@@ -131,7 +132,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   progressContainer: {
-    marginBottom: 10,
+    marginBottom: 8,
   },
   progressBar: {
     height: 8,
@@ -151,6 +152,9 @@ const styles = StyleSheet.create({
   },
   stats: {
     alignItems: 'center',
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingBottom: 5,
   },
   statsText: {
     fontSize: 12,
