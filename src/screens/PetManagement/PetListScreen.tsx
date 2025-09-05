@@ -11,11 +11,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
+import type { StackNavigationProp } from '@react-navigation/stack'
+import type { SettingsStackParamList } from '../../navigation/types'
 import { supabase } from '../../services/supabase'
+import type { Database } from '../../services/supabase'
+
+type Pet = Database['public']['Tables']['pets']['Row']
 
 export default function PetListScreen() {
-  const navigation = useNavigation<any>()
-  const [pets, setPets] = useState([])
+  const navigation = useNavigation<StackNavigationProp<SettingsStackParamList, 'PetManagement'>>()
+  const [pets, setPets] = useState<Pet[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -24,14 +29,14 @@ export default function PetListScreen() {
 
   const loadPets = async () => {
     const { data: { user } } = await supabase.auth.getUser()
-    const { data: member } = await supabase
+    const { data: member }: { data: { household_id: string } | null } = await supabase
       .from('household_members')
       .select('household_id')
       .eq('user_id', user?.id)
       .single()
 
     if (member) {
-      const { data: petsData } = await supabase
+      const { data: petsData }: { data: Pet[] | null } = await supabase
         .from('pets')
         .select('*')
         .eq('household_id', member.household_id)
@@ -60,7 +65,7 @@ export default function PetListScreen() {
     )
   }
 
-  const renderPetItem = ({ item }: any) => (
+  const renderPetItem = ({ item }: { item: Pet }) => (
     <TouchableOpacity
       style={styles.petCard}
       onPress={() => navigation.navigate('PetEdit', { petId: item.id })}
@@ -70,7 +75,7 @@ export default function PetListScreen() {
           <Image source={{ uri: item.photo_url }} style={styles.petImage} />
         ) : (
           <Ionicons 
-            name={item.species === 'cat' ? 'logo-octocat' : 'paw'} 
+            name={(item.species === 'cat' ? 'logo-octocat' : 'paw') as any}
             size={40} 
             color="#2196F3" 
           />
@@ -84,7 +89,7 @@ export default function PetListScreen() {
         </Text>
         {item.rfid_tag && (
           <View style={styles.tagBadge}>
-            <Ionicons name="pricetag" size={12} color="#666" />
+            <Ionicons name={'pricetag' as any} size={12} color="#666" />
             <Text style={styles.tagText}>Tagged</Text>
           </View>
         )}
@@ -101,7 +106,7 @@ export default function PetListScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <FlatList
+      <FlatList<Pet>
         data={pets}
         renderItem={renderPetItem}
         keyExtractor={(item) => item.id}

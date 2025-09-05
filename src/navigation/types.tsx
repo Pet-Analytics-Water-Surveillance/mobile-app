@@ -1,6 +1,6 @@
 import { StackNavigationProp } from '@react-navigation/stack'
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
-import { RouteProp } from '@react-navigation/native'
+import { RouteProp, NavigatorScreenParams } from '@react-navigation/native'
 
 // Auth Stack
 export type AuthStackParamList = {
@@ -14,14 +14,14 @@ export type MainTabParamList = {
   Home: undefined
   Calendar: undefined
   Statistics: undefined
-  Settings: undefined
+  Settings: NavigatorScreenParams<SettingsStackParamList>
 }
 
 // Settings Stack
 export type SettingsStackParamList = {
   SettingsList: undefined
   PetManagement: undefined
-  PetAdd: undefined
+  PetAdd: { fromHome?: boolean } | undefined
   PetEdit: { petId: string }
   DeviceSetup: undefined
   DeviceScan: undefined
