@@ -37,6 +37,13 @@ export default function HomeScreen() {
     alerts: 0,
   })
 
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good Morning! 👋'
+    if (hour < 17) return 'Good Afternoon! 👋'
+    return 'Good Evening! 👋'
+  }
+
   const loadDashboardData = useCallback(async () => {
     // Load household data
     const { data: { user } } = await supabase.auth.getUser()
@@ -110,8 +117,8 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Good Morning! 👋</Text>
-            <Text style={styles.householdName}>{'Dashboard'}</Text>
+            <Text style={styles.greeting}>{getGreeting()}</Text>
+            <Text style={styles.householdName}>Dashboard</Text>
           </View>
           <TouchableOpacity style={styles.notificationButton}>
             <Ionicons name="notifications-outline" size={24} color="#333" />
@@ -135,7 +142,12 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
           
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.petsScrollContainer}
+            style={styles.petsScrollView}
+          >
             {pets.map(pet => (
               <PetHydrationCard key={pet.id} pet={pet} />
             ))}
@@ -246,6 +258,13 @@ const styles = StyleSheet.create({
   seeAll: {
     fontSize: 14,
     color: '#2196F3',
+  },
+  petsScrollView: {
+    marginHorizontal: -10, // Negative margin to offset card margins
+  },
+  petsScrollContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 5,
   },
   addPetCard: {
     width: 150,
