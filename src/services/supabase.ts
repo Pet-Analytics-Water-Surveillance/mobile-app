@@ -63,141 +63,179 @@ export interface Database {
       pets: {
         Row: {
           id: string
-          name: string
-          species: string
-          breed?: string
-          weight_kg: number
-          daily_water_goal_ml: number
-          photo_url?: string
-          thumbnail_url?: string
-          rfid_tag?: string
           household_id: string
+          name: string
+          breed?: string
+          weight_kg?: number
+          birth_date?: string
+          photo_url?: string
+          rfid_tag?: string
+          species: string
+          daily_water_goal_ml: number
           created_at: string
-          updated_at: string
+          thumbnail_url?: string
+          recognition_features?: any
+          recognition_model_version?: string
         }
         Insert: {
           id?: string
-          name: string
-          species: string
-          breed?: string
-          weight_kg: number
-          daily_water_goal_ml: number
-          photo_url?: string
-          thumbnail_url?: string
-          rfid_tag?: string
           household_id: string
+          name: string
+          breed?: string
+          weight_kg?: number
+          birth_date?: string
+          photo_url?: string
+          rfid_tag?: string
+          species?: string
+          daily_water_goal_ml?: number
           created_at?: string
-          updated_at?: string
+          thumbnail_url?: string
+          recognition_features?: any
+          recognition_model_version?: string
         }
         Update: {
           id?: string
+          household_id?: string
           name?: string
-          species?: string
           breed?: string
           weight_kg?: number
-          daily_water_goal_ml?: number
+          birth_date?: string
           photo_url?: string
-          thumbnail_url?: string
           rfid_tag?: string
-          household_id?: string
+          species?: string
+          daily_water_goal_ml?: number
           created_at?: string
-          updated_at?: string
+          thumbnail_url?: string
+          recognition_features?: any
+          recognition_model_version?: string
         }
       }
       devices: {
         Row: {
           id: string
-          name: string
-          device_type: string
-          serial_number: string
           household_id: string
+          device_hardware_id: string
+          name: string
+          firmware_version?: string
+          last_seen?: string
+          wifi_rssi?: number
+          model: string
           is_online: boolean
-          last_seen: string
-          firmware_version: string
+          settings: any
           created_at: string
-          updated_at: string
         }
         Insert: {
           id?: string
-          name: string
-          device_type: string
-          serial_number: string
           household_id: string
-          is_online?: boolean
-          last_seen?: string
+          device_hardware_id: string
+          name: string
           firmware_version?: string
+          last_seen?: string
+          wifi_rssi?: number
+          model?: string
+          is_online?: boolean
+          settings?: any
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
-          name?: string
-          device_type?: string
-          serial_number?: string
           household_id?: string
-          is_online?: boolean
-          last_seen?: string
+          device_hardware_id?: string
+          name?: string
           firmware_version?: string
+          last_seen?: string
+          wifi_rssi?: number
+          model?: string
+          is_online?: boolean
+          settings?: any
           created_at?: string
-          updated_at?: string
         }
       }
       hydration_events: {
         Row: {
           id: string
-          pet_id: string
-          device_id: string
+          device_id?: string
+          pet_id?: string
           amount_ml: number
+          duration_ms?: number
+          confidence?: number
           timestamp: string
           created_at: string
         }
         Insert: {
           id?: string
-          pet_id: string
-          device_id: string
+          device_id?: string
+          pet_id?: string
           amount_ml: number
+          duration_ms?: number
+          confidence?: number
           timestamp?: string
           created_at?: string
         }
         Update: {
           id?: string
-          pet_id?: string
           device_id?: string
+          pet_id?: string
           amount_ml?: number
+          duration_ms?: number
+          confidence?: number
           timestamp?: string
           created_at?: string
         }
       }
-      hydration_alerts: {
+      device_tokens: {
         Row: {
-          id: string
-          household_id: string
-          pet_id: string
-          alert_type: 'low_water' | 'no_water' | 'device_offline'
-          message: string
-          is_acknowledged: boolean
-          acknowledged_at?: string
+          device_hardware_id?: string
+          household_id?: string
+          token: string
+          expires_at: string
+          used: boolean
           created_at: string
         }
         Insert: {
-          id?: string
-          household_id: string
-          pet_id: string
-          alert_type: 'low_water' | 'no_water' | 'device_offline'
-          message: string
-          is_acknowledged?: boolean
-          acknowledged_at?: string
+          device_hardware_id?: string
+          household_id?: string
+          token?: string
+          expires_at?: string
+          used?: boolean
           created_at?: string
         }
         Update: {
-          id?: string
+          device_hardware_id?: string
           household_id?: string
-          pet_id?: string
-          alert_type?: 'low_water' | 'no_water' | 'device_offline'
-          message?: string
-          is_acknowledged?: boolean
-          acknowledged_at?: string
+          token?: string
+          expires_at?: string
+          used?: boolean
           created_at?: string
+        }
+      }
+      pet_photos: {
+        Row: {
+          id: string
+          pet_id?: string
+          photo_url: string
+          thumbnail_url?: string
+          features?: any
+          is_primary: boolean
+          uploaded_at: string
+        }
+        Insert: {
+          id?: string
+          pet_id?: string
+          photo_url: string
+          thumbnail_url?: string
+          features?: any
+          is_primary?: boolean
+          uploaded_at?: string
+        }
+        Update: {
+          id?: string
+          pet_id?: string
+          photo_url?: string
+          thumbnail_url?: string
+          features?: any
+          is_primary?: boolean
+          uploaded_at?: string
         }
       }
     }
