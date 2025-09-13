@@ -14,17 +14,59 @@ import { supabase } from '../../services/supabase'
 
 const { width } = Dimensions.get('window')
 
-export default function StatisticsScreen() {
-  const [selectedPeriod, setSelectedPeriod] = useState('week')
-  const [stats, setStats] = useState({
+type Period = 'week' | 'month' | 'year'
+
+type HydrationEvent = {
+  amount_ml: number
+  timestamp: string
+  pet_id: string | number
+  pets?: { name?: string | null } | null
+}
+
+type PetStat = { total: number; count: number }
+
+type LineData = {
+  labels: string[]
+  datasets: { data: number[]; color?: (opacity?: number) => string; strokeWidth?: number }[]
+}
+
+type BarData = {
+  labels: string[]
+  datasets: { data: number[] }[]
+}
+
+type PieDatum = {
+  name: string
+  population: number
+  color: string
+  legendFontColor: string
+  legendFontSize: number
+}
+
+type Stats = {
+  totalWater: number
+  averagePerDay: number
+  totalEvents: number
+  topPet: { name: string; amount: number } | null
+}
+
+type ChartData = {
+  lineData: LineData
+  barData: BarData
+  pieData: PieDatum[]
+}
+
+export default function StatisticsScreen(): React.ReactElement {
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>('week')
+  const [stats, setStats] = useState<Stats>({
     totalWater: 0,
     averagePerDay: 0,
     totalEvents: 0,
     topPet: null,
   })
-  const [chartData, setChartData] = useState({
-    lineData: {},
-    barData: {},
+  const [chartData, setChartData] = useState<ChartData>({
+    lineData: { labels: [], datasets: [{ data: [] }] },
+    barData: { labels: [], datasets: [{ data: [] }] },
     pieData: [],
   })
 
@@ -32,7 +74,7 @@ export default function StatisticsScreen() {
     loadStatistics()
   }, [selectedPeriod])
 
-  const loadStatistics = async () => {
+  const loadStatistics = async (): Promise<void> => {
     const { data: { user } } = await supabase.auth.getUser()
     const { data: member } = await supabase
       .from('household_members')
@@ -70,13 +112,14 @@ export default function StatisticsScreen() {
         .order('timestamp', { ascending: true })
 
       if (events) {
-        const totalWater = events.reduce((sum, e) => sum + e.amount_ml, 0)
-        const totalEvents = events.length
-        const averagePerDay = totalWater / Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
+        const eventsTyped = (events ?? []) as HydrationEvent[]
+        const totalWater = eventsTyped.reduce((sum: number, e: HydrationEvent) => sum + e.amount_ml, 0)
+        const totalEvents = eventsTyped.length
+        const averagePerDay = totalWater / Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
 
         // Group by pet
-        const petStats = {}
-        events.forEach(event => {
+        const petStats: Record<string, PetStat> = {}
+        eventsTyped.forEach((event: HydrationEvent) => {
           const petName = event.pets?.name || 'Unknown'
           if (!petStats[petName]) {
             petStats[petName] = { total: 0, count: 0 }
@@ -85,8 +128,8 @@ export default function StatisticsScreen() {
           petStats[petName].count += 1
         })
 
-        const topPet = Object.entries(petStats)
-          .sort(([,a], [,b]) => b.total - a.total)[0]
+        const sortedEntries = Object.entries(petStats) as [string, PetStat][]
+        const topPet = sortedEntries.sort(([, a], [, b]) => b.total - a.total)[0]
 
         setStats({
           totalWater,
@@ -96,30 +139,35 @@ export default function StatisticsScreen() {
         })
 
         // Prepare chart data
-        prepareChartData(events, startDate, endDate, petStats)
+        prepareChartData(eventsTyped, startDate, endDate, petStats)
       }
     }
   }
 
-  const prepareChartData = (events: any[], startDate: Date, endDate: Date, petStats: any) => {
+  const prepareChartData = (
+    events: HydrationEvent[],
+    startDate: Date,
+    endDate: Date,
+    petStats: Record<string, PetStat>
+  ): void => {
     // Line chart data (daily water intake)
-    const dailyData = {}
+    const dailyData: Record<string, number> = {}
     const currentDate = new Date(startDate)
     
-    while (currentDate <= endDate) {
+    while (currentDate.getTime() <= endDate.getTime()) {
       const dateKey = currentDate.toISOString().split('T')[0]
       dailyData[dateKey] = 0
       currentDate.setDate(currentDate.getDate() + 1)
     }
 
-    events.forEach(event => {
+    events.forEach((event: HydrationEvent) => {
       const dateKey = event.timestamp.split('T')[0]
       if (dailyData[dateKey] !== undefined) {
         dailyData[dateKey] += event.amount_ml
       }
     })
 
-    const lineData = {
+    const lineData: LineData = {
       labels: Object.keys(dailyData).map(date => 
         new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       ),
@@ -131,17 +179,17 @@ export default function StatisticsScreen() {
     }
 
     // Bar chart data (pet comparison)
-    const barData = {
+    const barData: BarData = {
       labels: Object.keys(petStats),
       datasets: [{
-        data: Object.values(petStats).map((p: any) => p.total),
+        data: Object.values(petStats).map((p: PetStat) => p.total),
       }]
     }
 
     // Pie chart data (pet distribution)
-    const pieData = Object.entries(petStats).map(([name, data]: [string, any], index) => ({
+    const pieData: PieDatum[] = Object.entries(petStats).map(([name, data], index) => ({
       name,
-      population: data.total,
+      population: (data as PetStat).total,
       color: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'][index % 5],
       legendFontColor: '#7F7F7F',
       legendFontSize: 12,
@@ -150,7 +198,13 @@ export default function StatisticsScreen() {
     setChartData({ lineData, barData, pieData })
   }
 
-  const StatCard = ({ title, value, subtitle, icon, color }: any) => (
+  const StatCard = ({ title, value, subtitle, icon, color }: {
+    title: string
+    value: string | number
+    subtitle?: string
+    icon: React.ComponentProps<typeof Ionicons>['name']
+    color: string
+  }) => (
     <View style={[styles.statCard, { borderLeftColor: color }]}>
       <View style={styles.statHeader}>
         <Ionicons name={icon} size={24} color={color} />
@@ -172,7 +226,7 @@ export default function StatisticsScreen() {
 
       {/* Period Selector */}
       <View style={styles.periodSelector}>
-        {['week', 'month', 'year'].map(period => (
+        {(['week', 'month', 'year'] as Period[]).map((period: Period) => (
           <TouchableOpacity
             key={period}
             style={[
@@ -220,7 +274,7 @@ export default function StatisticsScreen() {
         </View>
 
         {/* Daily Water Intake Chart */}
-        {chartData.lineData.labels && chartData.lineData.labels.length > 0 && (
+        {chartData.lineData.labels.length > 0 && (
           <View style={styles.chartContainer}>
             <Text style={styles.chartTitle}>Daily Water Intake</Text>
             <LineChart
@@ -250,11 +304,11 @@ export default function StatisticsScreen() {
         )}
 
         {/* Pet Comparison Chart */}
-        {chartData.barData.labels && chartData.barData.labels.length > 0 && (
+        {chartData.barData.labels.length > 0 && (
           <View style={styles.chartContainer}>
             <Text style={styles.chartTitle}>Pet Comparison</Text>
             <BarChart
-              data={chartData.barData}
+              data={chartData.barData as any}
               width={width - 40}
               height={220}
               chartConfig={{
@@ -267,9 +321,8 @@ export default function StatisticsScreen() {
                 style: {
                   borderRadius: 16,
                 },
-              }}
-              style={styles.chart}
-            />
+              } as any}
+              style={styles.chart} yAxisLabel={''} yAxisSuffix={''}            />
           </View>
         )}
 
@@ -307,7 +360,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#fff',
+    //backgroundColor: '#fff',
   },
   title: {
     fontSize: 24,
@@ -318,7 +371,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#fff',
+    //backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
@@ -346,13 +399,13 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     marginTop: 20,
-    gap: 15,
   },
   statCard: {
     backgroundColor: '#fff',
     padding: 20,
     borderRadius: 12,
     borderLeftWidth: 4,
+    marginBottom: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,

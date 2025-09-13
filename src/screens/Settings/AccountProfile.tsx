@@ -81,7 +81,7 @@ export default function AccountProfile() {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: theme.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container}>
         {/* Header */}
-        <Text style={styles.title}>Profile</Text>
+        <Text style={styles.title}>Your Profile</Text>
         <Text style={styles.subtitle}>Edit your personal information</Text>
 
         {/* Avatar card */}
