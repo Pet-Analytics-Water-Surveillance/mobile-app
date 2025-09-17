@@ -189,9 +189,9 @@ export default function AccountProfile({ navigation }: Props) {
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={[styles.subtitle, { marginTop: 16 }]}>Loading profile...</Text>
+        <Text style={styles.loadingText}>Loading profile...</Text>
       </View>
     );
   }
@@ -490,4 +490,17 @@ const styles = StyleSheet.create({
     borderColor: theme.border 
   },
   householdActionText: { marginLeft: 8, color: theme.primary, fontWeight: '600' },
+
+  // Loading styles
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: theme.bg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: theme.subtext,
+    fontSize: 16,
+    marginTop: 16,
+  },
 });

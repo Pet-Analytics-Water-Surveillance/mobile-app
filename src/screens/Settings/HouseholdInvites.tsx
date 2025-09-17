@@ -199,9 +199,9 @@ export default function HouseholdInvites() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={[styles.subtitle, { marginTop: 16 }]}>Loading invitations...</Text>
+        <Text style={styles.loadingText}>Loading invitations...</Text>
       </View>
     );
   }
@@ -521,4 +521,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   shareButtonText: { color: theme.primary, fontWeight: '600', marginLeft: 8 },
+
+  // Loading styles
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: theme.bg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: theme.subtext,
+    fontSize: 16,
+    marginTop: 16,
+  },
 });
