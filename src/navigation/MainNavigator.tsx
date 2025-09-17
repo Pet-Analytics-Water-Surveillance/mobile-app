@@ -14,7 +14,8 @@ import DeviceScanScreen from '../screens/DeviceSetup/DeviceScanScreen'
 import WiFiSetupScreen from '../screens/DeviceSetup/WiFiSetupScreen'
 import SetupCompleteScreen from '../screens/DeviceSetup/SetupCompleteScreen'
 import { MainTabParamList, SettingsStackParamList } from './types'
-import AccountProfile from '../screens/Settings/AccountProfile'   // <-- add this at the top
+import AccountProfile from '../screens/Settings/AccountProfile'
+import HouseholdInvites from '../screens/Settings/HouseholdInvites'
 
 
 const Tab = createBottomTabNavigator<MainTabParamList>()
@@ -29,9 +30,14 @@ function SettingsNavigator() {
         options={{ title: 'Settings', headerShown: false }}
       />
       <SettingsStack.Screen 
-        name="Profile"                          // <-- NEW SCREEN
+        name="Profile"
         component={AccountProfile}
         options={{ title: 'Profile' }}
+      />
+      <SettingsStack.Screen 
+        name="HouseholdInvites"
+        component={HouseholdInvites}
+        options={{ title: 'Household Invites' }}
       />
       <SettingsStack.Screen 
         name="PetManagement" 

@@ -1,5 +1,5 @@
 // src/screens/Settings/AccountProfile.tsx
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,8 +11,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   Switch,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { ProfileService, UserProfile } from '../../services/ProfileService';
+import { HouseholdService, Household } from '../../services/HouseholdService';
+import JoinHouseholdModal from '../../components/JoinHouseholdModal';
+import { AccountProfileNavigationProp } from '../../navigation/types';
 
 const theme = {
   // keep this in sync with your app colors
@@ -25,57 +31,170 @@ const theme = {
   danger: '#ef4444',
 };
 
-export default function AccountProfile() {
-  // demo state (replace with your user data later)
+interface Props {
+  navigation: AccountProfileNavigationProp
+}
+
+export default function AccountProfile({ navigation }: Props) {
+  // Profile state
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
-  const [Firstname, setName1] = useState('Abdulmohsen');
-  const [Lastname, setName2] = useState('Almunayes');
-  const [email, setEmail] = useState('abdulmohsen@example.com');
-  const [phone, setPhone] = useState('+1 (555) 123-4567');
-  const [birthday, setBirthday] = useState('2000-01-01');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [birthday, setBirthday] = useState('');
   const [units, setUnits] = useState<'Metric' | 'Imperial'>('Metric');
   const [notifications, setNotifications] = useState(true);
 
-  const [initial] = useState({
+  // Household state
+  const [household, setHousehold] = useState<Household | null>(null);
+  const [householdName, setHouseholdName] = useState('');
+  const [isHouseholdOwner, setIsHouseholdOwner] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+
+  const [initial, setInitial] = useState({
     avatarUri: null as string | null,
-    Firstname: 'Abdulmohsen Almunayes',
-    Lastname: 'Almunayes',
-    email: 'abdulmohsen@example.com',
-    phone: '+1 (555) 123-4567',
-    birthday: '2000-01-01',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    birthday: '',
     units: 'Metric' as 'Metric' | 'Imperial',
     notifications: true,
+    householdName: '',
   });
+
+  // Load data on component mount
+  useEffect(() => {
+    loadProfileData();
+  }, []);
+
+  const loadProfileData = async () => {
+    try {
+      setLoading(true);
+      
+      // Load profile data
+      const profile = await ProfileService.getCurrentProfile();
+      if (profile) {
+        setAvatarUri(profile.avatar_url || null);
+        setFirstName(profile.first_name || '');
+        setLastName(profile.last_name || '');
+        setEmail(profile.email || '');
+        setPhone(profile.phone || '');
+        setBirthday(profile.user_metadata?.birthday || '');
+        setUnits(profile.user_metadata?.units || 'Metric');
+        setNotifications(profile.user_metadata?.notifications ?? true);
+      }
+
+      // Load household data
+      const currentHousehold = await HouseholdService.getCurrentHousehold();
+      setHousehold(currentHousehold);
+      setHouseholdName(currentHousehold?.name || '');
+      
+      const isOwner = await HouseholdService.isHouseholdOwner();
+      setIsHouseholdOwner(isOwner);
+
+      // Set initial values for change detection
+      setInitial({
+        avatarUri: profile?.avatar_url || null,
+        firstName: profile?.first_name || '',
+        lastName: profile?.last_name || '',
+        email: profile?.email || '',
+        phone: profile?.phone || '',
+        birthday: profile?.user_metadata?.birthday || '',
+        units: profile?.user_metadata?.units || 'Metric',
+        notifications: profile?.user_metadata?.notifications ?? true,
+        householdName: currentHousehold?.name || '',
+      });
+    } catch (error) {
+      console.error('Error loading profile data:', error);
+      Alert.alert('Error', 'Failed to load profile data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const hasChanges = useMemo(() => {
     return (
       avatarUri !== initial.avatarUri ||
-      Firstname !== initial.Firstname ||
-      Lastname !== initial.Lastname ||
+      firstName !== initial.firstName ||
+      lastName !== initial.lastName ||
       email !== initial.email ||
       phone !== initial.phone ||
       birthday !== initial.birthday ||
       units !== initial.units ||
-      notifications !== initial.notifications
+      notifications !== initial.notifications ||
+      householdName !== initial.householdName
     );
-  }, [avatarUri, Firstname, Lastname, email, phone, birthday, units, notifications, initial]);
+  }, [avatarUri, firstName, lastName, email, phone, birthday, units, notifications, householdName, initial]);
 
-  const onSave = () => {
-    // Hook up to backend later.
-    console.log('Save profile', { avatarUri, Firstname, Lastname, email, phone, birthday, units, notifications });
+  const onSave = async () => {
+    try {
+      setSaving(true);
+      
+      // Update profile
+      await ProfileService.updateProfile({
+        first_name: firstName,
+        last_name: lastName,
+        email: email,
+        phone: phone,
+        user_metadata: {
+          birthday: birthday,
+          units: units,
+          notifications: notifications,
+        },
+      });
+
+      // Update household name if changed and user is owner
+      if (householdName !== initial.householdName && isHouseholdOwner && household) {
+        await HouseholdService.updateHousehold({ name: householdName });
+      }
+
+      // Update initial values
+      setInitial({
+        avatarUri,
+        firstName,
+        lastName,
+        email,
+        phone,
+        birthday,
+        units,
+        notifications,
+        householdName,
+      });
+
+      Alert.alert('Success', 'Profile updated successfully');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      Alert.alert('Error', 'Failed to save profile');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const onCancel = () => {
     setAvatarUri(initial.avatarUri);
-    setName1(initial.Firstname);
-    setName2(initial.Lastname);
+    setFirstName(initial.firstName);
+    setLastName(initial.lastName);
     setEmail(initial.email);
     setPhone(initial.phone);
     setBirthday(initial.birthday);
     setUnits(initial.units);
     setNotifications(initial.notifications);
+    setHouseholdName(initial.householdName);
   };
 
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={[styles.subtitle, { marginTop: 16 }]}>Loading profile...</Text>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: theme.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -84,27 +203,37 @@ export default function AccountProfile() {
         <Text style={styles.title}>Your Profile</Text>
         <Text style={styles.subtitle}>Edit your personal information</Text>
 
-        {/* Avatar card */}
+        {/* Personal Info */}
         <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Personal Info</Text>
-              <Text style={styles.label}>First name</Text>
-              <TextInput
-                value={Firstname}
-                onChangeText={setName1}
-                placeholder="Your First name"
-                placeholderTextColor={theme.subtext}
-                style={styles.input}
-              />
+          <Text style={styles.sectionTitle}>Personal Info</Text>
+          
+          <Text style={styles.label}>First name</Text>
+          <TextInput
+            value={firstName}
+            onChangeText={setFirstName}
+            placeholder="Your First name"
+            placeholderTextColor={theme.subtext}
+            style={styles.input}
+          />
 
-              <Text style={styles.label}>Last name</Text>
-              <TextInput
-              value={Lastname}
-              onChangeText={setName2}
-              placeholder='Your Last name'
-              placeholderTextColor={theme.subtext}
-              style={styles.input}
-              />
-            </View>
+          <Text style={styles.label}>Last name</Text>
+          <TextInput
+            value={lastName}
+            onChangeText={setLastName}
+            placeholder="Your Last name"
+            placeholderTextColor={theme.subtext}
+            style={styles.input}
+          />
+
+          <Text style={styles.label}>Birthday</Text>
+          <TextInput
+            value={birthday}
+            onChangeText={setBirthday}
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor={theme.subtext}
+            style={styles.input}
+          />
+        </View>
           
         {/* Contact info */}
         <View style={styles.card}>
@@ -132,15 +261,121 @@ export default function AccountProfile() {
           />
         </View>
 
+        {/* Household Management */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Household</Text>
+          
+          <Text style={styles.label}>Household Name</Text>
+          <TextInput
+            value={householdName}
+            onChangeText={setHouseholdName}
+            placeholder="Your household name"
+            placeholderTextColor={theme.subtext}
+            style={[styles.input, !isHouseholdOwner && { opacity: 0.6 }]}
+            editable={isHouseholdOwner}
+          />
+          
+          {!isHouseholdOwner && (
+            <Text style={styles.helper}>
+              Only household owners can change the household name
+            </Text>
+          )}
+          
+          <View style={styles.householdInfo}>
+            <View style={styles.householdItem}>
+              <Ionicons name="people-outline" size={18} color={theme.subtext} />
+              <Text style={styles.householdText}>
+                Role: {isHouseholdOwner ? 'Owner' : 'Member'}
+              </Text>
+            </View>
+            
+            {household && (
+              <View style={styles.householdItem}>
+                <Ionicons name="home-outline" size={18} color={theme.subtext} />
+                <Text style={styles.householdText}>
+                  ID: {household.id.slice(0, 8)}...
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.householdActions}>
+            {isHouseholdOwner && (
+              <TouchableOpacity 
+                style={styles.householdActionButton}
+                onPress={() => navigation.navigate('HouseholdInvites')}
+              >
+                <Ionicons name="mail-outline" size={18} color={theme.primary} />
+                <Text style={styles.householdActionText}>Manage Invites</Text>
+              </TouchableOpacity>
+            )}
+            
+            <TouchableOpacity 
+              style={styles.householdActionButton}
+              onPress={() => setShowJoinModal(true)}
+            >
+              <Ionicons name="add-outline" size={18} color={theme.primary} />
+              <Text style={styles.householdActionText}>Join Household</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Preferences */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Preferences</Text>
+          
+          <Text style={styles.label}>Units</Text>
+          <View style={styles.segment}>
+            <TouchableOpacity
+              style={[styles.segmentBtn, units === 'Metric' && styles.segmentBtnActive]}
+              onPress={() => setUnits('Metric')}
+            >
+              <Text style={[styles.segmentText, units === 'Metric' && styles.segmentTextActive]}>
+                Metric
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segmentBtn, units === 'Imperial' && styles.segmentBtnActive]}
+              onPress={() => setUnits('Imperial')}
+            >
+              <Text style={[styles.segmentText, units === 'Imperial' && styles.segmentTextActive]}>
+                Imperial
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.toggleRow}>
+            <Text style={styles.label}>Push Notifications</Text>
+            <Switch
+              value={notifications}
+              onValueChange={setNotifications}
+              trackColor={{ false: theme.border, true: theme.primary }}
+              thumbColor={notifications ? '#fff' : theme.subtext}
+            />
+          </View>
+        </View>
 
         {/* Actions */}
         <View style={styles.actions}>
           <TouchableOpacity style={[styles.btn, styles.btnSecondary]} onPress={onCancel} disabled={!hasChanges}>
             <Text style={[styles.btnText, styles.btnTextSecondary]}>Cancel</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.btn, styles.btnPrimary, !hasChanges && { opacity: 0.6 }]} onPress={onSave} disabled={!hasChanges}>
-            <Ionicons name="save-outline" size={18} color="#fff" />
-            <Text style={[styles.btnText, { color: '#fff', marginLeft: 8 }]}>Save changes</Text>
+          <TouchableOpacity 
+            style={[styles.btn, styles.btnPrimary, (!hasChanges || saving) && { opacity: 0.6 }]} 
+            onPress={onSave} 
+            disabled={!hasChanges || saving}
+          >
+            {saving ? (
+              <>
+                <ActivityIndicator size="small" color="#fff" />
+                <Text style={[styles.btnText, { color: '#fff', marginLeft: 8 }]}>Saving...</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="save-outline" size={18} color="#fff" />
+                <Text style={[styles.btnText, { color: '#fff', marginLeft: 8 }]}>Save changes</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -154,6 +389,12 @@ export default function AccountProfile() {
 
         <View style={{ height: 28 }} />
       </ScrollView>
+      
+      <JoinHouseholdModal
+        visible={showJoinModal}
+        onClose={() => setShowJoinModal(false)}
+        onSuccess={loadProfileData}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -233,4 +474,20 @@ const styles = StyleSheet.create({
   btnPrimary: { flex: 2, borderColor: theme.primary, backgroundColor: theme.primary },
   btnText: { fontWeight: '700', color: theme.text },
   btnTextSecondary: { color: theme.text },
+
+  // Household styles
+  householdInfo: { marginTop: 12, gap: 8 },
+  householdItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  householdText: { color: theme.subtext, fontSize: 14 },
+  householdActions: { marginTop: 16, gap: 8 },
+  householdActionButton: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    padding: 12, 
+    backgroundColor: theme.bg, 
+    borderRadius: 8, 
+    borderWidth: 1, 
+    borderColor: theme.border 
+  },
+  householdActionText: { marginLeft: 8, color: theme.primary, fontWeight: '600' },
 });

@@ -28,6 +28,7 @@ export type SettingsStackParamList = {
   WiFiSetup: { deviceId: string }
   SetupComplete: { deviceId: string }
   Profile: undefined
+  HouseholdInvites: undefined
 }
 
 // Root Stack
@@ -41,3 +42,4 @@ export type WelcomeScreenNavigationProp = StackNavigationProp<AuthStackParamList
 export type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>
 export type HomeScreenNavigationProp = BottomTabNavigationProp<MainTabParamList, 'Home'>
 export type SettingsScreenNavigationProp = StackNavigationProp<SettingsStackParamList, 'SettingsList'>
+export type AccountProfileNavigationProp = StackNavigationProp<SettingsStackParamList, 'Profile'>

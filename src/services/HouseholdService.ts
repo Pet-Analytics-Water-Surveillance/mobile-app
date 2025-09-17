@@ -195,4 +195,45 @@ export class HouseholdService {
 
     return member?.role === 'owner'
   }
+
+  /**
+   * Update household information (only for owners)
+   */
+  static async updateHousehold(updates: Partial<Pick<Household, 'name'>>): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      throw new Error('User not authenticated')
+    }
+
+    // Check if user is the owner
+    const isOwner = await this.isHouseholdOwner()
+    if (!isOwner) {
+      throw new Error('Only household owners can update household information')
+    }
+
+    // Get the household_id
+    const { data: member } = await supabase
+      .from('household_members')
+      .select('household_id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!member) {
+      throw new Error('User is not a member of any household')
+    }
+
+    // Update the household
+    const { error } = await supabase
+      .from('households')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', member.household_id)
+
+    if (error) {
+      throw error
+    }
+  }
 }
