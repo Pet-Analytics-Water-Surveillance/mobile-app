@@ -43,10 +43,6 @@ export default function HouseholdInvites() {
   const [inviteCode, setInviteCode] = useState('');
   const [showCodeModal, setShowCodeModal] = useState(false);
   
-  // Test email state
-  const [showTestModal, setShowTestModal] = useState(false);
-  const [testEmail, setTestEmail] = useState('');
-  const [testingSending, setTestingSending] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -186,29 +182,6 @@ export default function HouseholdInvites() {
     }
   };
 
-  const handleTestEmail = async () => {
-    if (!testEmail.trim()) {
-      Alert.alert('Error', 'Please enter an email address');
-      return;
-    }
-
-    try {
-      setTestingSending(true);
-      const success = await InviteService.sendTestEmail(testEmail.trim());
-      
-      if (success) {
-        Alert.alert('Success', `Test email sent to ${testEmail}! Check your inbox and spam folder.`);
-        setTestEmail('');
-        setShowTestModal(false);
-      } else {
-        Alert.alert('Error', 'Failed to send test email. Check console logs for details.');
-      }
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to send test email');
-    } finally {
-      setTestingSending(false);
-    }
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -258,14 +231,6 @@ export default function HouseholdInvites() {
           >
             <Ionicons name="qr-code-outline" size={20} color={theme.primary} />
             <Text style={styles.actionButtonText}>Generate Invite Code</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.actionButton} 
-            onPress={() => setShowTestModal(true)}
-          >
-            <Ionicons name="mail-open-outline" size={20} color={theme.warning} />
-            <Text style={[styles.actionButtonText, { color: theme.warning }]}>Test Email</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -433,61 +398,6 @@ export default function HouseholdInvites() {
         </View>
       </Modal>
 
-      {/* Test Email Modal */}
-      <Modal
-        visible={showTestModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowTestModal(false)}>
-              <Ionicons name="close" size={24} color={theme.text} />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Test Email</Text>
-            <View style={{ width: 24 }} />
-          </View>
-
-          <View style={styles.modalContent}>
-            <Text style={styles.codeInstructions}>
-              Send a test email to verify your email setup is working correctly.
-            </Text>
-
-            <Text style={styles.label}>Email Address</Text>
-            <TextInput
-              value={testEmail}
-              onChangeText={setTestEmail}
-              placeholder="Enter your email to test"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={styles.input}
-            />
-
-            <TouchableOpacity
-              style={[styles.sendButton, (testingSending || !testEmail.trim()) && { opacity: 0.6 }]}
-              onPress={handleTestEmail}
-              disabled={testingSending || !testEmail.trim()}
-            >
-              {testingSending ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="mail-open-outline" size={20} color="#fff" />
-                  <Text style={styles.sendButtonText}>Send Test Email</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.infoBox}>
-              <Ionicons name="information-circle-outline" size={20} color={theme.primary} />
-              <Text style={styles.infoText}>
-                This will send a test invitation email using your Supabase Edge Function. 
-                Check both inbox and spam folder.
-              </Text>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </ScrollView>
   );
 }
@@ -611,22 +521,4 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   shareButtonText: { color: theme.primary, fontWeight: '600', marginLeft: 8 },
-
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: theme.card,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.border,
-    marginTop: 16,
-  },
-  infoText: {
-    flex: 1,
-    marginLeft: 12,
-    fontSize: 14,
-    color: theme.subtext,
-    lineHeight: 20,
-  },
 });

@@ -357,52 +357,6 @@ export class InviteService {
     return code
   }
 
-  /**
-   * Test email functionality by sending a test email
-   */
-  static async sendTestEmail(testEmail: string): Promise<boolean> {
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      throw new Error('User not authenticated')
-    }
-
-    // Get current household
-    const household = await HouseholdService.getCurrentHousehold()
-    if (!household) {
-      throw new Error('User must be in a household to test email')
-    }
-
-    try {
-      const inviteCode = household.id.replace(/-/g, '').substring(0, 8).toLowerCase()
-      const inviterName = user.user_metadata?.first_name 
-        ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}`.trim()
-        : user.email
-
-      const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
-        body: {
-          inviteeEmail: testEmail,
-          householdName: household.name,
-          inviterName: inviterName,
-          message: 'This is a test email to verify the invitation system is working correctly.',
-          inviteCode: inviteCode,
-          invitationId: 'test-invitation-id',
-          isTest: true // Flag to indicate this is a test email
-        }
-      })
-
-      if (emailError) {
-        console.error('Test email failed:', emailError)
-        return false
-      }
-
-      console.log('✅ Test email sent successfully to:', testEmail)
-      return true
-    } catch (error) {
-      console.error('Test email error:', error)
-      return false
-    }
-  }
 
   /**
    * Join household using invite code
