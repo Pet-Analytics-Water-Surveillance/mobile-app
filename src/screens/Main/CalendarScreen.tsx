@@ -31,8 +31,21 @@ type MarkedDateEntry = {
 
 type MarkedDatesMap = Record<string, MarkedDateEntry>
 
+// Helpers to safely handle local dates without UTC shifting
+const formatDateKey = (d: Date): string => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+const parseLocalDateKey = (key: string): Date => {
+  const [y, m, d] = key.split('-').map(Number)
+  return new Date(y, (m || 1) - 1, d || 1)
+}
+
 export default function CalendarScreen() {
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
+  const [selectedDate, setSelectedDate] = useState<string>(formatDateKey(new Date()))
   const [markedDates, setMarkedDates] = useState<MarkedDatesMap>({})
   const [dayEvents, setDayEvents] = useState<HydrationEvent[]>([])
   const [pets, setPets] = useState<Pet[]>([])
@@ -67,14 +80,10 @@ export default function CalendarScreen() {
   }
 
   const loadMonthData = async (): Promise<void> => {
-    const startOfMonth = new Date()
-    startOfMonth.setDate(1)
-    startOfMonth.setHours(0, 0, 0, 0)
-    
-    const endOfMonth = new Date()
-    endOfMonth.setMonth(endOfMonth.getMonth() + 1)
-    endOfMonth.setDate(0)
-    endOfMonth.setHours(23, 59, 59, 999)
+    // Compute month range in local time, then query using UTC ISO strings
+    const now = new Date()
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
 
     const { data: events } = await supabase
       .from('hydration_events')
@@ -82,10 +91,10 @@ export default function CalendarScreen() {
       .gte('timestamp', startOfMonth.toISOString())
       .lte('timestamp', endOfMonth.toISOString())
 
-    // Mark dates with events
+    // Mark dates with events (convert each event timestamp to local date key)
     const marked: MarkedDatesMap = {}
     ;(events as Array<{ timestamp: string; pet_id: string }> | null)?.forEach(event => {
-      const date = event.timestamp.split('T')[0]
+      const date = formatDateKey(new Date(event.timestamp))
       if (!marked[date]) {
         marked[date] = { marked: true, dotColor: '#2196F3' }
       }
@@ -98,11 +107,10 @@ export default function CalendarScreen() {
   }
 
   const loadDayEvents = async (date: string): Promise<void> => {
-    const startOfDay = new Date(date)
-    startOfDay.setHours(0, 0, 0, 0)
-    
-    const endOfDay = new Date(date)
-    endOfDay.setHours(23, 59, 59, 999)
+    // Parse the selected date as a local date to avoid UTC off-by-one
+    const base = parseLocalDateKey(date)
+    const startOfDay = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, 0, 0, 0)
+    const endOfDay = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59, 999)
 
     const { data: events } = await supabase
       .from('hydration_events')
@@ -207,7 +215,7 @@ export default function CalendarScreen() {
       <ScrollView style={styles.eventsList}>
         <View style={styles.dateHeader}>
           <Text style={styles.dateTitle}>
-            {new Date(selectedDate).toLocaleDateString('en-US', {
+            {parseLocalDateKey(selectedDate).toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
               month: 'long',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   View,
   Text,
@@ -13,6 +13,10 @@ import { LineChart, BarChart, PieChart } from 'react-native-chart-kit'
 import { supabase } from '../../services/supabase'
 
 const { width } = Dimensions.get('window')
+const SCROLL_HORIZONTAL_PADDING = 20
+const CARD_HORIZONTAL_PADDING = 16
+const CHART_HORIZONTAL_PADDING = 2 * (SCROLL_HORIZONTAL_PADDING + CARD_HORIZONTAL_PADDING)
+const chartWidth = Math.max(width - CHART_HORIZONTAL_PADDING, 220)
 
 type Period = 'week' | 'month' | 'year'
 
@@ -84,19 +88,23 @@ export default function StatisticsScreen(): React.ReactElement {
 
     if (member) {
       const endDate = new Date()
-      const startDate = new Date()
+      endDate.setHours(23, 59, 59, 999)
+      const startDate = new Date(endDate)
       
       switch (selectedPeriod) {
         case 'week':
-          startDate.setDate(endDate.getDate() - 7)
+          startDate.setDate(endDate.getDate() - 6)
           break
         case 'month':
           startDate.setMonth(endDate.getMonth() - 1)
           break
         case 'year':
-          startDate.setFullYear(endDate.getFullYear() - 1)
+          startDate.setMonth(endDate.getMonth() - 11)
+          startDate.setDate(1)
           break
       }
+
+      startDate.setHours(0, 0, 0, 0)
 
       // Load hydration events
       const { data: events } = await supabase
@@ -150,29 +158,98 @@ export default function StatisticsScreen(): React.ReactElement {
     endDate: Date,
     petStats: Record<string, PetStat>
   ): void => {
-    // Line chart data (daily water intake)
-    const dailyData: Record<string, number> = {}
-    const currentDate = new Date(startDate)
-    
-    while (currentDate.getTime() <= endDate.getTime()) {
-      const dateKey = currentDate.toISOString().split('T')[0]
-      dailyData[dateKey] = 0
-      currentDate.setDate(currentDate.getDate() + 1)
+    const startOfDay = (date: Date): Date => {
+      const copy = new Date(date)
+      copy.setHours(0, 0, 0, 0)
+      return copy
     }
 
-    events.forEach((event: HydrationEvent) => {
-      const dateKey = event.timestamp.split('T')[0]
-      if (dailyData[dateKey] !== undefined) {
-        dailyData[dateKey] += event.amount_ml
+    const start = startOfDay(startDate)
+    const end = startOfDay(endDate)
+    const MS_PER_DAY = 24 * 60 * 60 * 1000
+
+    let lineLabels: string[] = []
+    let lineValues: number[] = []
+
+    if (selectedPeriod === 'week') {
+      const dailyKeys: string[] = []
+      const dailyTotals: Record<string, number> = {}
+      const cursor = new Date(start)
+
+      while (cursor.getTime() <= end.getTime()) {
+        const key = cursor.toISOString().split('T')[0]
+        dailyKeys.push(key)
+        dailyTotals[key] = 0
+        cursor.setDate(cursor.getDate() + 1)
       }
-    })
+
+      events.forEach((event: HydrationEvent) => {
+        const key = startOfDay(new Date(event.timestamp)).toISOString().split('T')[0]
+        if (dailyTotals[key] !== undefined) {
+          dailyTotals[key] += event.amount_ml
+        }
+      })
+
+      lineLabels = dailyKeys.map(date =>
+        new Date(date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
+      )
+      lineValues = dailyKeys.map(key => dailyTotals[key])
+    } else if (selectedPeriod === 'month') {
+      const totalDays = Math.max(1, Math.floor((end.getTime() - start.getTime()) / MS_PER_DAY) + 1)
+      const weekCount = Math.max(1, Math.ceil(totalDays / 7))
+      const weekTotals = new Array(weekCount).fill(0)
+
+      events.forEach((event: HydrationEvent) => {
+        const eventDate = startOfDay(new Date(event.timestamp))
+        const diffDays = Math.floor((eventDate.getTime() - start.getTime()) / MS_PER_DAY)
+
+        if (diffDays >= 0 && diffDays < totalDays) {
+          const bucketIndex = Math.min(Math.floor(diffDays / 7), weekCount - 1)
+          weekTotals[bucketIndex] += event.amount_ml
+        }
+      })
+
+      lineLabels = Array.from({ length: weekCount }).map((_, index) => {
+        const weekStart = new Date(start)
+        weekStart.setDate(weekStart.getDate() + index * 7)
+        return weekStart.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
+      })
+      lineValues = weekTotals
+    } else {
+      const monthKeys: string[] = []
+      const monthTotals: number[] = []
+      const monthIndex: Record<string, number> = {}
+
+      for (let i = 11; i >= 0; i--) {
+        const cursor = new Date(end.getFullYear(), end.getMonth() - i, 1)
+        const key = `${cursor.getFullYear()}-${cursor.getMonth()}`
+        monthIndex[key] = monthKeys.length
+        monthKeys.push(key)
+        monthTotals.push(0)
+      }
+
+      events.forEach((event: HydrationEvent) => {
+        const eventDate = new Date(event.timestamp)
+        const key = `${eventDate.getFullYear()}-${eventDate.getMonth()}`
+        const index = monthIndex[key]
+        if (index !== undefined) {
+          monthTotals[index] += event.amount_ml
+        }
+      })
+
+      lineLabels = monthKeys.map(key => {
+        const [yearString, monthString] = key.split('-')
+        const year = Number(yearString)
+        const month = Number(monthString)
+        return new Date(year, month, 1).toLocaleDateString('en-US', { month: 'short' })
+      })
+      lineValues = monthTotals
+    }
 
     const lineData: LineData = {
-      labels: Object.keys(dailyData).map(date => 
-        new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      ),
+      labels: lineLabels,
       datasets: [{
-        data: Object.values(dailyData),
+        data: lineValues,
         color: (opacity = 1) => `rgba(33, 150, 243, ${opacity})`,
         strokeWidth: 2,
       }]
@@ -197,6 +274,18 @@ export default function StatisticsScreen(): React.ReactElement {
 
     setChartData({ lineData, barData, pieData })
   }
+
+  const lineChartWidth = useMemo(() => {
+    if (selectedPeriod === 'year') {
+      const dataset = chartData.lineData.datasets[0]
+      const dataPoints = dataset?.data?.length ?? chartData.lineData.labels.length
+      const MIN_WIDTH_PER_POINT = 56
+      return Math.max(chartWidth, dataPoints * MIN_WIDTH_PER_POINT)
+    }
+    return chartWidth
+  }, [chartData.lineData, selectedPeriod])
+
+  const enableLineChartScroll = selectedPeriod === 'year' && lineChartWidth > chartWidth
 
   const StatCard = ({ title, value, subtitle, icon, color }: {
     title: string
@@ -276,30 +365,68 @@ export default function StatisticsScreen(): React.ReactElement {
         {/* Daily Water Intake Chart */}
         {chartData.lineData.labels.length > 0 && (
           <View style={styles.chartContainer}>
-            <Text style={styles.chartTitle}>Daily Water Intake</Text>
-            <LineChart
-              data={chartData.lineData}
-              width={width - 40}
-              height={220}
-              chartConfig={{
-                backgroundColor: '#fff',
-                backgroundGradientFrom: '#fff',
-                backgroundGradientTo: '#fff',
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(33, 150, 243, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                style: {
-                  borderRadius: 16,
-                },
-                propsForDots: {
-                  r: '6',
-                  strokeWidth: '2',
-                  stroke: '#2196F3',
-                },
-              }}
-              bezier
-              style={styles.chart}
-            />
+            <Text style={styles.chartTitle}>Water Intake</Text>
+            {enableLineChartScroll ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalChartContent}
+              >
+                <View style={styles.chartWrapper}>
+                  <LineChart
+                    data={chartData.lineData}
+                    width={lineChartWidth}
+                    height={220}
+                    chartConfig={{
+                      backgroundColor: '#fff',
+                      backgroundGradientFrom: '#fff',
+                      backgroundGradientTo: '#fff',
+                      decimalPlaces: 0,
+                      color: (opacity = 1) => `rgba(33, 150, 243, ${opacity})`,
+                      labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                      style: {
+                        borderRadius: 16,
+                      },
+                      propsForDots: {
+                        r: '6',
+                        strokeWidth: '2',
+                        stroke: '#2196F3',
+                      },
+                    }}
+                    bezier
+                    style={styles.chart}
+                    yLabelsOffset={8}
+                  />
+                </View>
+              </ScrollView>
+            ) : (
+              <View style={styles.chartWrapper}>
+                <LineChart
+                  data={chartData.lineData}
+                  width={lineChartWidth}
+                  height={220}
+                  chartConfig={{
+                    backgroundColor: '#fff',
+                    backgroundGradientFrom: '#fff',
+                    backgroundGradientTo: '#fff',
+                    decimalPlaces: 0,
+                    color: (opacity = 1) => `rgba(33, 150, 243, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                    style: {
+                      borderRadius: 16,
+                    },
+                    propsForDots: {
+                      r: '6',
+                      strokeWidth: '2',
+                      stroke: '#2196F3',
+                    },
+                  }}
+                  bezier
+                  style={styles.chart}
+                  yLabelsOffset={8}
+                />
+              </View>
+            )}
           </View>
         )}
 
@@ -307,22 +434,28 @@ export default function StatisticsScreen(): React.ReactElement {
         {chartData.barData.labels.length > 0 && (
           <View style={styles.chartContainer}>
             <Text style={styles.chartTitle}>Pet Comparison</Text>
-            <BarChart
-              data={chartData.barData as any}
-              width={width - 40}
-              height={220}
-              chartConfig={{
-                backgroundColor: '#fff',
-                backgroundGradientFrom: '#fff',
-                backgroundGradientTo: '#fff',
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                style: {
-                  borderRadius: 16,
-                },
-              } as any}
-              style={styles.chart} yAxisLabel={''} yAxisSuffix={''}            />
+            <View style={styles.chartWrapper}>
+              <BarChart
+                data={chartData.barData as any}
+                width={chartWidth}
+                height={220}
+                chartConfig={{
+                  backgroundColor: '#fff',
+                  backgroundGradientFrom: '#fff',
+                  backgroundGradientTo: '#fff',
+                  decimalPlaces: 0,
+                  color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
+                  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                  style: {
+                    borderRadius: 16,
+                  },
+                } as any}
+                style={styles.chart}
+                yAxisLabel={''}
+                yAxisSuffix={''}
+                yLabelsOffset={8}
+              />
+            </View>
           </View>
         )}
 
@@ -330,18 +463,20 @@ export default function StatisticsScreen(): React.ReactElement {
         {chartData.pieData.length > 0 && (
           <View style={styles.chartContainer}>
             <Text style={styles.chartTitle}>Water Distribution by Pet</Text>
-            <PieChart
-              data={chartData.pieData}
-              width={width - 40}
-              height={220}
-              chartConfig={{
-                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-              }}
-              accessor="population"
-              backgroundColor="transparent"
-              paddingLeft="15"
-              style={styles.chart}
-            />
+            <View style={styles.chartWrapper}>
+              <PieChart
+                data={chartData.pieData}
+                width={chartWidth}
+                height={220}
+                chartConfig={{
+                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                }}
+                accessor="population"
+                backgroundColor="transparent"
+                paddingLeft="15"
+                style={styles.chart}
+              />
+            </View>
           </View>
         )}
       </ScrollView>
@@ -435,7 +570,8 @@ const styles = StyleSheet.create({
   chartContainer: {
     backgroundColor: '#fff',
     marginTop: 20,
-    padding: 20,
+    paddingVertical: 14,
+    paddingHorizontal: CARD_HORIZONTAL_PADDING,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -452,5 +588,12 @@ const styles = StyleSheet.create({
   },
   chart: {
     borderRadius: 12,
+  },
+  horizontalChartContent: {
+    paddingRight: 16,
+  },
+  chartWrapper: {
+    marginLeft: -8,
+    paddingRight: 8,
   },
 })
