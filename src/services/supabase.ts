@@ -209,6 +209,44 @@ export interface Database {
           created_at?: string
         }
       }
+      household_invitations: {
+        Row: {
+          id: string
+          household_id: string
+          inviter_id: string
+          invitee_email: string
+          invitee_id?: string
+          status: 'pending' | 'accepted' | 'rejected' | 'expired'
+          expires_at: string
+          message?: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          household_id: string
+          inviter_id: string
+          invitee_email: string
+          invitee_id?: string
+          status?: 'pending' | 'accepted' | 'rejected' | 'expired'
+          expires_at?: string
+          message?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          household_id?: string
+          inviter_id?: string
+          invitee_email?: string
+          invitee_id?: string
+          status?: 'pending' | 'accepted' | 'rejected' | 'expired'
+          expires_at?: string
+          message?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
       pet_photos: {
         Row: {
           id: string
