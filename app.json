@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "PAWS",
-    "slug": "PAWS",
-    "version": "1.0.0",
+    "slug": "paws-water-monitor",
+    "version": "0.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,20 +13,74 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.teampaws.hydrationmonitor",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSBluetoothAlwaysUsageDescription": "PAWS needs Bluetooth to connect to your pet hydration monitoring device and track water consumption in real-time.",
+        "NSBluetoothPeripheralUsageDescription": "PAWS needs Bluetooth to discover and setup your pet hydration monitoring device.",
+        "NSLocationWhenInUseUsageDescription": "Location is required for Bluetooth device discovery and setup of your pet monitoring system.",
+        "NSCameraUsageDescription": "PAWS needs camera access to take photos of your pets for their profiles.",
+        "NSPhotoLibraryUsageDescription": "PAWS needs photo library access to select photos for your pet profiles."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.tribui1912.pawswatermonitor",
+      "permissions": [
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_SCAN",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "WAKE_LOCK",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ],
+      "usesCleartextTraffic": false,
+      "allowBackup": true,
+      "targetSdkVersion": 34
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
-    ]
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#ffffff"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "PAWS needs access to your photo library to select photos for your pet profiles."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Location is required for Bluetooth device discovery and setup."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "d9716a15-e0e3-44c9-a438-9bc018e87bd5"
+      }
+    },
+    "owner": "tribui1912"
   }
 }
