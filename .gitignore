@@ -51,6 +51,10 @@ yarn-error.log
 dist/
 web-build/
 
+# Expo Prebuild - Ignore generated native directories
+ios/
+android/
+
 # Native
 *.orig.*
 *.jks
