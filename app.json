@@ -2,7 +2,7 @@
   "expo": {
     "name": "PAWS",
     "slug": "paws-water-monitor",
-    "version": "0.0.1",
+    "version": "0.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -20,8 +20,10 @@
         "NSBluetoothAlwaysUsageDescription": "PAWS needs Bluetooth to connect to your pet hydration monitoring device and track water consumption in real-time.",
         "NSBluetoothPeripheralUsageDescription": "PAWS needs Bluetooth to discover and setup your pet hydration monitoring device.",
         "NSLocationWhenInUseUsageDescription": "Location is required for Bluetooth device discovery and setup of your pet monitoring system.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Location is required for Bluetooth device discovery and setup of your pet monitoring system.",
         "NSCameraUsageDescription": "PAWS needs camera access to take photos of your pets for their profiles.",
-        "NSPhotoLibraryUsageDescription": "PAWS needs photo library access to select photos for your pet profiles."
+        "NSPhotoLibraryUsageDescription": "PAWS needs photo library access to select photos for your pet profiles.",
+        "NSPhotoLibraryAddUsageDescription": "PAWS needs access to save photos to your photo library."
       }
     },
     "android": {
@@ -32,20 +34,36 @@
       "edgeToEdgeEnabled": true,
       "package": "com.tribui1912.pawswatermonitor",
       "permissions": [
-        "BLUETOOTH",
-        "BLUETOOTH_ADMIN",
-        "BLUETOOTH_CONNECT",
-        "BLUETOOTH_SCAN",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "INTERNET",
-        "ACCESS_NETWORK_STATE",
-        "WAKE_LOCK",
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE"
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.WAKE_LOCK",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.WAKE_LOCK",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.RECORD_AUDIO"
       ],
       "usesCleartextTraffic": false,
       "allowBackup": true,
@@ -79,8 +97,16 @@
     "extra": {
       "eas": {
         "projectId": "d9716a15-e0e3-44c9-a438-9bc018e87bd5"
-      }
+      },
+      "supabaseUrl": "PLACEHOLDER_URL",
+      "supabaseAnonKey": "PLACEHOLDER_KEY"
     },
-    "owner": "tribui1912"
+    "owner": "tribui1912",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d9716a15-e0e3-44c9-a438-9bc018e87bd5"
+    }
   }
 }
