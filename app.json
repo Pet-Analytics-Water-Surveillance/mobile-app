@@ -2,7 +2,7 @@
   "expo": {
     "name": "PAWS",
     "slug": "paws-water-monitor",
-    "version": "0.0.1",
+    "version": "0.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -20,8 +20,10 @@
         "NSBluetoothAlwaysUsageDescription": "PAWS needs Bluetooth to connect to your pet hydration monitoring device and track water consumption in real-time.",
         "NSBluetoothPeripheralUsageDescription": "PAWS needs Bluetooth to discover and setup your pet hydration monitoring device.",
         "NSLocationWhenInUseUsageDescription": "Location is required for Bluetooth device discovery and setup of your pet monitoring system.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Location is required for Bluetooth device discovery and setup of your pet monitoring system.",
         "NSCameraUsageDescription": "PAWS needs camera access to take photos of your pets for their profiles.",
-        "NSPhotoLibraryUsageDescription": "PAWS needs photo library access to select photos for your pet profiles."
+        "NSPhotoLibraryUsageDescription": "PAWS needs photo library access to select photos for your pet profiles.",
+        "NSPhotoLibraryAddUsageDescription": "PAWS needs access to save photos to your photo library."
       }
     },
     "android": {

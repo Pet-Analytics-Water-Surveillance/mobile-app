@@ -12,7 +12,21 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease"
+      },
+      "ios": {
+        "buildConfiguration": "Release"
+      },
+      "env": {
+        "EXPO_NO_CAPABILITY_SYNC": "1",
+        "NODE_ENV": "production"
+      },
+      "cache": {
+        "disabled": false
+      }
     }
   },
   "submit": {

@@ -4,6 +4,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'YOUR_SUPABASE_URL'
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY'
 
+// Debug logging
+console.log('🔍 Environment Variables Debug:')
+console.log('Raw process.env.EXPO_PUBLIC_SUPABASE_URL:', process.env.EXPO_PUBLIC_SUPABASE_URL)
+console.log('Raw process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY:', process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY)
+console.log('Final supabaseUrl:', supabaseUrl)
+console.log('Final supabaseAnonKey:', supabaseAnonKey ? 'SET' : 'MISSING')
+console.log('Is URL placeholder?', supabaseUrl === 'YOUR_SUPABASE_URL')
+console.log('Is KEY placeholder?', supabaseAnonKey === 'YOUR_SUPABASE_ANON_KEY')
+console.log('All process.env keys:', Object.keys(process.env))
+
+// Prevent crash if environment variables are missing
+if (supabaseUrl === 'YOUR_SUPABASE_URL' || supabaseAnonKey === 'YOUR_SUPABASE_ANON_KEY') {
+  console.error('❌ Environment variables not loaded properly!')
+  console.error('This will cause the app to crash. Check EAS environment variable configuration.')
+  // Don't create Supabase client with invalid credentials
+  throw new Error('Environment variables not configured properly')
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: AsyncStorage,
