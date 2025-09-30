@@ -1,33 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import Constants from 'expo-constants'
 
-// Get environment variables - try multiple sources
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 
-                   Constants.expoConfig?.extra?.supabaseUrl ||
-                   Constants.manifest?.extra?.supabaseUrl
-                   
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 
-                       Constants.expoConfig?.extra?.supabaseAnonKey ||
-                       Constants.manifest?.extra?.supabaseAnonKey
-
-// Debug logging
-console.log('🔍 Environment Variables Debug:')
-console.log('Raw process.env.EXPO_PUBLIC_SUPABASE_URL:', process.env.EXPO_PUBLIC_SUPABASE_URL)
-console.log('Raw process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY:', process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY)
-console.log('Final supabaseUrl:', supabaseUrl)
-console.log('Final supabaseAnonKey:', supabaseAnonKey ? 'SET' : 'MISSING')
-console.log('Is URL placeholder?', supabaseUrl === 'YOUR_SUPABASE_URL')
-console.log('Is KEY placeholder?', supabaseAnonKey === 'YOUR_SUPABASE_ANON_KEY')
-console.log('All process.env keys:', Object.keys(process.env))
+// Get environment variables from build-time process.env
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
 
 // Validate environment variables
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Missing Supabase environment variables!')
-  console.error('EXPO_PUBLIC_SUPABASE_URL:', supabaseUrl ? 'SET' : 'MISSING')
-  console.error('EXPO_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'SET' : 'MISSING')
   throw new Error(
-    'Missing required environment variables. Please ensure EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY are set in your EAS environment configuration.'
+    'Missing Supabase environment variables. ' +
+    'Make sure EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY are set in EAS.'
   )
 }
 
