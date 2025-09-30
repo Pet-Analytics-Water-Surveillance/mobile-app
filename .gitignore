@@ -55,6 +55,9 @@ web-build/
 ios/
 android/
 
+# Environment configuration with credentials
+# app.config.js - Commented out so it's included in git
+
 # Native
 *.orig.*
 *.jks
