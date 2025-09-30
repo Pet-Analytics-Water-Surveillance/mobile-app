@@ -24,6 +24,7 @@
         "EXPO_NO_CAPABILITY_SYNC": "1",
         "NODE_ENV": "production"
       },
+      "channel": "production",
       "cache": {
         "disabled": false
       }

@@ -1,8 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import Constants from 'expo-constants'
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'YOUR_SUPABASE_URL'
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY'
+// Get environment variables - try multiple sources
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 
+                   Constants.expoConfig?.extra?.supabaseUrl ||
+                   Constants.manifest?.extra?.supabaseUrl
+                   
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 
+                       Constants.expoConfig?.extra?.supabaseAnonKey ||
+                       Constants.manifest?.extra?.supabaseAnonKey
 
 // Debug logging
 console.log('🔍 Environment Variables Debug:')
@@ -14,12 +21,14 @@ console.log('Is URL placeholder?', supabaseUrl === 'YOUR_SUPABASE_URL')
 console.log('Is KEY placeholder?', supabaseAnonKey === 'YOUR_SUPABASE_ANON_KEY')
 console.log('All process.env keys:', Object.keys(process.env))
 
-// Prevent crash if environment variables are missing
-if (supabaseUrl === 'YOUR_SUPABASE_URL' || supabaseAnonKey === 'YOUR_SUPABASE_ANON_KEY') {
-  console.error('❌ Environment variables not loaded properly!')
-  console.error('This will cause the app to crash. Check EAS environment variable configuration.')
-  // Don't create Supabase client with invalid credentials
-  throw new Error('Environment variables not configured properly')
+// Validate environment variables
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('❌ Missing Supabase environment variables!')
+  console.error('EXPO_PUBLIC_SUPABASE_URL:', supabaseUrl ? 'SET' : 'MISSING')
+  console.error('EXPO_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'SET' : 'MISSING')
+  throw new Error(
+    'Missing required environment variables. Please ensure EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY are set in your EAS environment configuration.'
+  )
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

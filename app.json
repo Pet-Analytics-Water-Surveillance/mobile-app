@@ -81,7 +81,9 @@
     "extra": {
       "eas": {
         "projectId": "d9716a15-e0e3-44c9-a438-9bc018e87bd5"
-      }
+      },
+      "supabaseUrl": "EAS_WILL_INJECT_THIS",
+      "supabaseAnonKey": "EAS_WILL_INJECT_THIS"
     },
     "owner": "tribui1912"
   }
