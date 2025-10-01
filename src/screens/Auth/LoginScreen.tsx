@@ -16,6 +16,7 @@ import { useForm, Controller } from 'react-hook-form'
 import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { supabase } from '../../services/supabase'
+import { EmailVerificationService } from '../../services/EmailVerificationService'
 import { LoginScreenNavigationProp } from '../../navigation/types'
 
 const schema = yup.object({
@@ -41,17 +42,49 @@ export default function LoginScreen({ navigation }: Props) {
 
   const onSubmit = async (data: any) => {
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({
-      email: data.email,
-      password: data.password,
-    })
+    
+    try {
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      })
 
-    setLoading(false)
-
-    if (error) {
-      Alert.alert('Login Error', error.message)
+      if (error) {
+        Alert.alert('Login Error', error.message)
+      } else if (signInData.user && !signInData.user.email_confirmed_at) {
+        // User exists but email not verified
+        Alert.alert(
+          'Email Not Verified',
+          'Please check your email and click the verification link before signing in. Check your spam folder if you don\'t see it.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Resend Email', 
+              onPress: () => resendVerificationEmail(data.email)
+            }
+          ]
+        )
+        // Sign out the unverified user
+        await supabase.auth.signOut()
+      }
+      // Navigation handled by auth state listener in AppNavigator
+    } catch (error) {
+      Alert.alert('Error', 'Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
     }
-    // Navigation handled by auth state listener in AppNavigator
+  }
+
+  const resendVerificationEmail = async (email: string) => {
+    try {
+      await EmailVerificationService.resendVerificationEmail(email)
+      Alert.alert(
+        'Verification Email Sent',
+        'We\'ve sent a new verification email. Please check your inbox and spam folder.'
+      )
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to resend verification email. Please try again.')
+    }
   }
 
   return (
