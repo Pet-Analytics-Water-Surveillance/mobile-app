@@ -5,9 +5,9 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
-  SafeAreaView,
   Dimensions,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import * as Animatable from 'react-native-animatable'
 import { WelcomeScreenNavigationProp } from '../../navigation/types'
@@ -21,7 +21,8 @@ interface Props {
 export default function WelcomeScreen({ navigation }: Props) {
   return (
     <LinearGradient
-      colors={['#4FC3F7', '#2196F3', '#1976D2']}
+      colors={['#57b1fbff', '#fff', '#fff']} //colors={['#4FC3F7', '#57adf3ff', '#1976D2']}
+
       style={styles.container}
     >
       <SafeAreaView style={styles.container}>
