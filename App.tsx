@@ -7,6 +7,7 @@ import * as Notifications from 'expo-notifications'
 import AppNavigator from './src/navigation/AppNavigator'
 import { supabase } from './src/services/supabase'
 import { EmailVerificationService } from './src/services/EmailVerificationService'
+import { GoogleAuthService } from './src/services/GoogleAuthService'
 
 const queryClient = new QueryClient()
 
@@ -46,27 +47,49 @@ export default function App() {
       
       if (url.includes('paws://auth/callback')) {
         try {
-          const result = await EmailVerificationService.handleEmailVerification(url)
-          
-          if (result.success) {
-            console.log('✅ Email verification successful!')
-            Alert.alert(
-              'Email Verified!', 
-              'Your email has been successfully verified. Welcome to PAWS!',
-              [{ text: 'Continue', style: 'default' }]
-            )
+          // Check if this is a Google OAuth callback or email verification
+          if (url.includes('access_token') || url.includes('code')) {
+            // This is likely a Google OAuth callback
+            const result = await GoogleAuthService.handleOAuthCallback(url)
+            
+            if (result.success) {
+              console.log('✅ Google sign-in successful!')
+              Alert.alert(
+                'Welcome!', 
+                'You have successfully signed in with Google!',
+                [{ text: 'Continue', style: 'default' }]
+              )
+            } else {
+              console.error('❌ Google OAuth failed:', result.error)
+              Alert.alert(
+                'Sign In Failed', 
+                result.error || 'There was an error signing in with Google. Please try again.'
+              )
+            }
           } else {
-            console.error('❌ Email verification failed:', result.error)
-            Alert.alert(
-              'Verification Failed', 
-              result.error || 'There was an error verifying your email. Please try again or contact support.'
-            )
+            // This is likely an email verification callback
+            const result = await EmailVerificationService.handleEmailVerification(url)
+            
+            if (result.success) {
+              console.log('✅ Email verification successful!')
+              Alert.alert(
+                'Email Verified!', 
+                'Your email has been successfully verified. Welcome to PAWS!',
+                [{ text: 'Continue', style: 'default' }]
+              )
+            } else {
+              console.error('❌ Email verification failed:', result.error)
+              Alert.alert(
+                'Verification Failed', 
+                result.error || 'There was an error verifying your email. Please try again or contact support.'
+              )
+            }
           }
         } catch (error) {
           console.error('❌ Deep link processing error:', error)
           Alert.alert(
-            'Verification Error', 
-            'Unable to process email verification. Please try signing in.'
+            'Authentication Error', 
+            'Unable to process authentication. Please try again.'
           )
         }
       }

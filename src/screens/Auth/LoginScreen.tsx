@@ -17,6 +17,7 @@ import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { supabase } from '../../services/supabase'
 import { EmailVerificationService } from '../../services/EmailVerificationService'
+import { GoogleAuthService } from '../../services/GoogleAuthService'
 import { LoginScreenNavigationProp } from '../../navigation/types'
 
 const schema = yup.object({
@@ -30,6 +31,7 @@ interface Props {
 
 export default function LoginScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
   const { control, handleSubmit, formState: { errors } } = useForm({
@@ -84,6 +86,25 @@ export default function LoginScreen({ navigation }: Props) {
       )
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to resend verification email. Please try again.')
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true)
+    
+    try {
+      const result = await GoogleAuthService.signInWithGoogle()
+      
+      if (result.success) {
+        // Success is handled by the auth state listener in AppNavigator
+        console.log('Google sign-in successful')
+      } else {
+        Alert.alert('Google Sign-In Failed', result.error || 'Failed to sign in with Google. Please try again.')
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'An error occurred during Google sign-in.')
+    } finally {
+      setGoogleLoading(false)
     }
   }
 
@@ -172,9 +193,19 @@ export default function LoginScreen({ navigation }: Props) {
             <View style={styles.dividerLine} />
           </View>
 
-          <TouchableOpacity style={styles.socialButton}>
-            <Ionicons name="logo-google" size={20} color="#DB4437" />
-            <Text style={styles.socialButtonText}>Continue with Google</Text>
+          <TouchableOpacity 
+            style={styles.socialButton}
+            onPress={handleGoogleSignIn}
+            disabled={googleLoading || loading}
+          >
+            {googleLoading ? (
+              <ActivityIndicator size="small" color="#DB4437" />
+            ) : (
+              <Ionicons name="logo-google" size={20} color="#DB4437" />
+            )}
+            <Text style={styles.socialButtonText}>
+              {googleLoading ? 'Signing in...' : 'Continue with Google'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity

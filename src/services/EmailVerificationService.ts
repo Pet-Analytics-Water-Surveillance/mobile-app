@@ -31,17 +31,33 @@ export class EmailVerificationService {
    */
   static async handleEmailVerification(url: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const { data, error } = await supabase.auth.getSessionFromUrl({ url })
+      // Parse the URL to extract tokens
+      const urlObj = new URL(url)
+      const fragment = urlObj.hash.substring(1) // Remove the # symbol
+      const params = new URLSearchParams(fragment)
       
-      if (error) {
-        return { success: false, error: error.message }
+      const accessToken = params.get('access_token')
+      const refreshToken = params.get('refresh_token')
+      
+      if (accessToken) {
+        // Set the session with the tokens
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || ''
+        })
+        
+        if (error) {
+          return { success: false, error: error.message }
+        }
+        
+        if (data?.session) {
+          return { success: true }
+        }
+        
+        return { success: false, error: 'No session found in verification link' }
+      } else {
+        return { success: false, error: 'No access token found in verification link' }
       }
-      
-      if (data?.session) {
-        return { success: true }
-      }
-      
-      return { success: false, error: 'No session found in verification link' }
     } catch (error) {
       return { 
         success: false, 
