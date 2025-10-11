@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
   Text,
@@ -8,9 +8,11 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Calendar } from 'react-native-calendars'
+import type { Theme as CalendarTheme } from 'react-native-calendars/src/types'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../services/supabase'
 import type { Database } from '../../services/supabase'
+import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
 
 interface HydrationEvent {
   id: string
@@ -49,17 +51,61 @@ export default function CalendarScreen() {
   const [markedDates, setMarkedDates] = useState<MarkedDatesMap>({})
   const [dayEvents, setDayEvents] = useState<HydrationEvent[]>([])
   const [pets, setPets] = useState<Pet[]>([])
+  const { theme } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
+  const calendarTheme = React.useMemo<CalendarTheme>(
+    () => ({
+      backgroundColor: theme.colors.surface,
+      calendarBackground: theme.colors.surface,
+      textSectionTitleColor: theme.colors.muted,
+      textSectionTitleDisabledColor: theme.colors.muted,
+      selectedDayBackgroundColor: theme.colors.primary,
+      selectedDayTextColor: theme.colors.onPrimary,
+      todayTextColor: theme.colors.primary,
+      todayBackgroundColor: theme.mode === 'dark' ? theme.colors.overlay : '#ffffff',
+      dayTextColor: theme.colors.text,
+      textDisabledColor: theme.colors.muted,
+      textInactiveColor: theme.colors.muted,
+      dotColor: theme.colors.primary,
+      selectedDotColor: theme.colors.onPrimary,
+      disabledDotColor: theme.colors.border,
+      inactiveDotColor: theme.colors.border,
+      todayDotColor: theme.colors.primary,
+      arrowColor: theme.colors.primary,
+      monthTextColor: theme.colors.text,
+      indicatorColor: theme.colors.primary,
+      textDayFontWeight: '400' as const,
+      textMonthFontWeight: '600' as const,
+      textDayHeaderFontWeight: '500' as const,
+      textDayFontSize: 16,
+      textMonthFontSize: 18,
+      textDayHeaderFontSize: 14,
+      stylesheet: {
+        calendar: {
+          main: {
+            backgroundColor: theme.colors.surface,
+          },
+          header: {
+            backgroundColor: theme.colors.surface,
+          },
+        },
+        day: {
+          basic: {
+            backgroundColor: theme.colors.surface,
+            borderRadius: 0,
+          },
+        },
+        'calendar-list': {
+          main: {
+            backgroundColor: theme.colors.surface,
+          },
+        },
+      },
+    }),
+    [theme]
+  )
 
-  useEffect(() => {
-    loadMonthData()
-    loadPets()
-  }, [])
-
-  useEffect(() => {
-    loadDayEvents(selectedDate)
-  }, [selectedDate])
-
-  const loadPets = async (): Promise<void> => {
+  const loadPets = useCallback(async (): Promise<void> => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user?.id) return
 
@@ -77,9 +123,9 @@ export default function CalendarScreen() {
       
       setPets((petsData as Pet[]) || [])
     }
-  }
+  }, [])
 
-  const loadMonthData = async (): Promise<void> => {
+  const loadMonthData = useCallback(async (): Promise<void> => {
     // Compute month range in local time, then query using UTC ISO strings
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
@@ -96,17 +142,21 @@ export default function CalendarScreen() {
     ;(events as Array<{ timestamp: string; pet_id: string }> | null)?.forEach(event => {
       const date = formatDateKey(new Date(event.timestamp))
       if (!marked[date]) {
-        marked[date] = { marked: true, dotColor: '#2196F3' }
+        marked[date] = { marked: true, dotColor: theme.colors.primary }
       }
     })
 
     // Mark selected date
-    marked[selectedDate] = { ...(marked[selectedDate] || {}), selected: true, selectedColor: '#2196F3' }
+    marked[selectedDate] = {
+      ...(marked[selectedDate] || {}),
+      selected: true,
+      selectedColor: theme.colors.primary,
+    }
     
     setMarkedDates(marked)
-  }
+  }, [selectedDate, theme.colors.primary])
 
-  const loadDayEvents = async (date: string): Promise<void> => {
+  const loadDayEvents = useCallback(async (date: string): Promise<void> => {
     // Parse the selected date as a local date to avoid UTC off-by-one
     const base = parseLocalDateKey(date)
     const startOfDay = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, 0, 0, 0)
@@ -142,7 +192,30 @@ export default function CalendarScreen() {
     }))
 
     setDayEvents(formattedEvents)
-  }
+  }, [])
+
+  useEffect(() => {
+    loadMonthData()
+    loadPets()
+  }, [loadMonthData, loadPets])
+
+  useEffect(() => {
+    loadDayEvents(selectedDate)
+  }, [loadDayEvents, selectedDate])
+
+  useEffect(() => {
+    setMarkedDates(prev => {
+      const updated: MarkedDatesMap = {}
+      Object.entries(prev).forEach(([date, value]) => {
+        updated[date] = {
+          ...value,
+          ...(value.marked ? { dotColor: theme.colors.primary } : {}),
+          ...(value.selected ? { selectedColor: theme.colors.primary } : {}),
+        }
+      })
+      return updated
+    })
+  }, [theme.colors.primary])
 
   type DayPress = { dateString: string }
   const onDayPress = (day: DayPress) => {
@@ -159,7 +232,7 @@ export default function CalendarScreen() {
     newMarked[day.dateString] = {
       ...(newMarked[day.dateString] || {}),
       selected: true,
-      selectedColor: '#2196F3',
+      selectedColor: theme.colors.primary,
     }
     setMarkedDates(newMarked)
   }
@@ -182,34 +255,17 @@ export default function CalendarScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Hydration Calendar</Text>
         <TouchableOpacity>
-          <Ionicons name="filter-outline" size={24} color="#333" />
+          <Ionicons name="filter-outline" size={24} color={theme.colors.text} />
         </TouchableOpacity>
       </View>
 
       <Calendar
+        key={theme.mode}
         current={selectedDate}
         markedDates={markedDates}
         onDayPress={onDayPress}
-        theme={{
-          backgroundColor: '#ffffff',
-          calendarBackground: '#ffffff',
-          textSectionTitleColor: '#b6c1cd',
-          selectedDayBackgroundColor: '#2196F3',
-          selectedDayTextColor: '#ffffff',
-          todayTextColor: '#2196F3',
-          dayTextColor: '#2d4150',
-          textDisabledColor: '#d9e1e8',
-          dotColor: '#2196F3',
-          selectedDotColor: '#ffffff',
-          arrowColor: '#2196F3',
-          monthTextColor: '#2d4150',
-          textDayFontWeight: '300',
-          textMonthFontWeight: 'bold',
-          textDayHeaderFontWeight: '300',
-          textDayFontSize: 16,
-          textMonthFontSize: 18,
-          textDayHeaderFontSize: 14
-        }}
+        theme={calendarTheme}
+        style={styles.calendar}
       />
 
       <ScrollView style={styles.eventsList}>
@@ -239,12 +295,12 @@ export default function CalendarScreen() {
                   {event.amount_ml}ml at {formatTime(event.timestamp)}
                 </Text>
               </View>
-              <Ionicons name="water" size={24} color="#4FC3F7" />
+              <Ionicons name="water" size={24} color={theme.colors.info} />
             </View>
           ))
         ) : (
           <View style={styles.noEvents}>
-            <Ionicons name="calendar-outline" size={48} color="#C0C0C0" />
+            <Ionicons name="calendar-outline" size={48} color={theme.colors.muted} />
             <Text style={styles.noEventsText}>No hydration events on this day</Text>
           </View>
         )}
@@ -253,81 +309,97 @@ export default function CalendarScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    //backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  eventsList: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  dateHeader: {
-    marginTop: 20,
-    marginBottom: 15,
-  },
-  dateTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 5,
-  },
-  eventCount: {
-    fontSize: 14,
-    color: '#666',
-  },
-  eventCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  eventIndicator: {
-    width: 4,
-    height: 40,
-    borderRadius: 2,
-    marginRight: 15,
-  },
-  eventContent: {
-    flex: 1,
-  },
-  eventPetName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  eventDetails: {
-    fontSize: 14,
-    color: '#666',
-  },
-  noEvents: {
-    alignItems: 'center',
-    marginTop: 50,
-  },
-  noEventsText: {
-    marginTop: 15,
-    fontSize: 16,
-    color: '#999',
-  },
-})
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 15,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: theme.colors.text,
+    },
+    eventsList: {
+      flex: 1,
+      paddingHorizontal: 20,
+    },
+    dateHeader: {
+      marginTop: 20,
+      marginBottom: 15,
+    },
+    calendar: {
+      marginHorizontal: 20,
+      marginBottom: 12,
+      borderRadius: 16,
+      backgroundColor: theme.colors.surface,
+      borderWidth: theme.mode === 'dark' ? 1 : 0,
+      borderColor: theme.colors.border,
+      overflow: 'hidden',
+      elevation: theme.mode === 'dark' ? 0 : 2,
+      shadowColor: theme.mode === 'dark' ? 'transparent' : '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: theme.mode === 'dark' ? 0 : 0.05,
+      shadowRadius: 2,
+    },
+    dateTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: theme.colors.text,
+      marginBottom: 5,
+    },
+    eventCount: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+    },
+    eventCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.card,
+      padding: 15,
+      borderRadius: 12,
+      marginBottom: 10,
+      shadowColor: theme.mode === 'dark' ? 'transparent' : '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: theme.mode === 'dark' ? 0 : 0.05,
+      shadowRadius: 2,
+      elevation: theme.mode === 'dark' ? 0 : 2,
+      borderWidth: theme.mode === 'dark' ? 1 : 0,
+      borderColor: theme.colors.border,
+    },
+    eventIndicator: {
+      width: 4,
+      height: 40,
+      borderRadius: 2,
+      marginRight: 15,
+    },
+    eventContent: {
+      flex: 1,
+    },
+    eventPetName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.text,
+      marginBottom: 4,
+    },
+    eventDetails: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+    },
+    noEvents: {
+      alignItems: 'center',
+      marginTop: 50,
+    },
+    noEventsText: {
+      marginTop: 15,
+      fontSize: 16,
+      color: theme.colors.muted,
+    },
+  })

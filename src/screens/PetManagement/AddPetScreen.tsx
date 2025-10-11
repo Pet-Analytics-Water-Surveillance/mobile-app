@@ -17,11 +17,14 @@ import { Picker } from '@react-native-picker/picker'
 import { PhotoUploadService } from '../../services/PhotoUpload'
 import { HouseholdService } from '../../services/HouseholdService'
 import { supabase } from '../../services/supabase'
+import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
 
 export default function AddPetScreen() {
   const navigation = useNavigation()
   const [loading, setLoading] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const { theme } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   
   const [petData, setPetData] = useState({
     name: '',
@@ -142,44 +145,48 @@ export default function AddPetScreen() {
             Add photos to enable visual recognition
           </Text>
           
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.photoContainer}
             onPress={() => handlePickImage(false)}
+            activeOpacity={0.85}
           >
             {uploadingPhoto ? (
-              <ActivityIndicator size="large" color="#2196F3" />
+              <ActivityIndicator size="large" color={theme.colors.primary} />
             ) : photoUri ? (
               <Image source={{ uri: photoUri }} style={styles.petPhoto} />
             ) : (
               <>
-                <Ionicons name="camera-outline" size={48} color="#999" />
+                <Ionicons name="camera-outline" size={48} color={theme.colors.textSecondary} />
                 <Text style={styles.photoText}>Tap to add photo</Text>
               </>
             )}
           </TouchableOpacity>
 
           <View style={styles.photoButtons}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.photoButton}
               onPress={() => handlePickImage(true)}
+              activeOpacity={0.75}
             >
-              <Ionicons name="camera" size={20} color="#2196F3" />
+              <Ionicons name="camera" size={20} color={theme.colors.primary} />
               <Text style={styles.photoButtonText}>Camera</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.photoButton}
               onPress={() => handlePickImage(false)}
+              activeOpacity={0.75}
             >
-              <Ionicons name="images" size={20} color="#2196F3" />
+              <Ionicons name="images" size={20} color={theme.colors.primary} />
               <Text style={styles.photoButtonText}>Gallery</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.photoButton}
               onPress={handleTakeMultiplePhotos}
+              activeOpacity={0.75}
             >
-              <Ionicons name="school" size={20} color="#2196F3" />
+              <Ionicons name="school" size={20} color={theme.colors.primary} />
               <Text style={styles.photoButtonText}>Train AI</Text>
             </TouchableOpacity>
           </View>
@@ -196,6 +203,7 @@ export default function AddPetScreen() {
               value={petData.name}
               onChangeText={(text) => setPetData({ ...petData, name: text })}
               placeholder="Enter pet name"
+              placeholderTextColor={theme.colors.textSecondary}
             />
           </View>
 
@@ -205,10 +213,12 @@ export default function AddPetScreen() {
               <Picker
                 selectedValue={petData.species}
                 onValueChange={(value) => setPetData({ ...petData, species: value })}
+                style={styles.picker}
+                dropdownIconColor={theme.colors.text}
               >
-                <Picker.Item label="Dog" value="dog" />
-                <Picker.Item label="Cat" value="cat" />
-                <Picker.Item label="Other" value="other" />
+                <Picker.Item label="Dog" value="dog" color={theme.colors.text} />
+                <Picker.Item label="Cat" value="cat" color={theme.colors.text} />
+                <Picker.Item label="Other" value="other" color={theme.colors.text} />
               </Picker>
             </View>
           </View>
@@ -220,6 +230,7 @@ export default function AddPetScreen() {
               value={petData.breed}
               onChangeText={(text) => setPetData({ ...petData, breed: text })}
               placeholder="e.g., Golden Retriever"
+              placeholderTextColor={theme.colors.textSecondary}
             />
           </View>
 
@@ -230,6 +241,7 @@ export default function AddPetScreen() {
               value={petData.weight}
               onChangeText={(text) => setPetData({ ...petData, weight: text })}
               placeholder="Enter weight"
+              placeholderTextColor={theme.colors.textSecondary}
               keyboardType="decimal-pad"
             />
           </View>
@@ -241,6 +253,7 @@ export default function AddPetScreen() {
               value={petData.rfidTag}
               onChangeText={(text) => setPetData({ ...petData, rfidTag: text })}
               placeholder="Optional - for RFID recognition"
+              placeholderTextColor={theme.colors.textSecondary}
             />
           </View>
 
@@ -251,18 +264,20 @@ export default function AddPetScreen() {
               value={petData.dailyWaterGoal}
               onChangeText={(text) => setPetData({ ...petData, dailyWaterGoal: text })}
               placeholder="500"
+              placeholderTextColor={theme.colors.textSecondary}
               keyboardType="number-pad"
             />
           </View>
         </View>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.saveButton}
           onPress={savePet}
           disabled={loading}
+          activeOpacity={0.85}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={theme.colors.onPrimary} />
           ) : (
             <Text style={styles.saveButtonText}>Add Pet</Text>
           )}
@@ -272,113 +287,125 @@ export default function AddPetScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 0,
-  },
-  photoSection: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    marginTop: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  photoHelp: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 15,
-  },
-  photoContainer: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: '#F5F5F5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    marginBottom: 20,
-    overflow: 'hidden',
-  },
-  petPhoto: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-  },
-  photoText: {
-    marginTop: 10,
-    color: '#999',
-    fontSize: 14,
-  },
-  photoButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  photoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    backgroundColor: '#E3F2FD',
-  },
-  photoButtonText: {
-    marginLeft: 6,
-    color: '#2196F3',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  formSection: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: '#FAFAFA',
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    backgroundColor: '#FAFAFA',
-  },
-  saveButton: {
-    backgroundColor: '#2196F3',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginBottom: 16,
-    marginHorizontal: 0,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-})
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    content: {
+      paddingHorizontal: 16,
+      paddingTop: 0,
+    },
+    photoSection: {
+      backgroundColor: theme.colors.card,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      marginTop: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: theme.colors.text,
+      marginBottom: 8,
+    },
+    photoHelp: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      marginBottom: 15,
+    },
+    photoContainer: {
+      width: 150,
+      height: 150,
+      borderRadius: 75,
+      backgroundColor: theme.colors.surface,
+      justifyContent: 'center',
+      alignItems: 'center',
+      alignSelf: 'center',
+      marginBottom: 20,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    petPhoto: {
+      width: 150,
+      height: 150,
+      borderRadius: 75,
+    },
+    photoText: {
+      marginTop: 10,
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+    },
+    photoButtons: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginTop: 8,
+    },
+    photoButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 20,
+      backgroundColor: theme.colors.overlay,
+    },
+    photoButtonText: {
+      marginLeft: 6,
+      color: theme.colors.primary,
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    formSection: {
+      backgroundColor: theme.colors.card,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    inputGroup: {
+      marginBottom: 16,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: theme.colors.text,
+      marginBottom: 8,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 15,
+      paddingVertical: 12,
+      fontSize: 16,
+      backgroundColor: theme.colors.surface,
+      color: theme.colors.text,
+    },
+    pickerContainer: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 8,
+      backgroundColor: theme.colors.surface,
+    },
+    picker: {
+      color: theme.colors.text,
+    },
+    saveButton: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: 12,
+      paddingVertical: 16,
+      alignItems: 'center',
+      marginBottom: 24,
+      marginHorizontal: 0,
+    },
+    saveButtonText: {
+      color: theme.colors.onPrimary,
+      fontSize: 18,
+      fontWeight: '600',
+    },
+  })

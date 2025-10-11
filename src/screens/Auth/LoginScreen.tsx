@@ -19,6 +19,7 @@ import { supabase } from '../../services/supabase'
 import { EmailVerificationService } from '../../services/EmailVerificationService'
 import { GoogleAuthService } from '../../services/GoogleAuthService'
 import { LoginScreenNavigationProp } from '../../navigation/types'
+import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
 
 const schema = yup.object({
   email: yup.string().email('Invalid email').required('Email is required'),
@@ -33,6 +34,8 @@ export default function LoginScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const { theme } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
 
   const { control, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
@@ -117,8 +120,9 @@ export default function LoginScreen({ navigation }: Props) {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
 
         <View style={styles.header}>
@@ -132,10 +136,11 @@ export default function LoginScreen({ navigation }: Props) {
             name="email"
             render={({ field: { onChange, value } }) => (
               <View style={styles.inputContainer}>
-                <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
+                <Ionicons name="mail-outline" size={20} color={theme.colors.textSecondary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Email"
+                  placeholderTextColor={theme.colors.textSecondary}
                   value={value}
                   onChangeText={onChange}
                   keyboardType="email-address"
@@ -151,10 +156,11 @@ export default function LoginScreen({ navigation }: Props) {
             name="password"
             render={({ field: { onChange, value } }) => (
               <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+                <Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Password"
+                  placeholderTextColor={theme.colors.textSecondary}
                   value={value}
                   onChangeText={onChange}
                   secureTextEntry={!showPassword}
@@ -163,7 +169,7 @@ export default function LoginScreen({ navigation }: Props) {
                   <Ionicons
                     name={showPassword ? 'eye-outline' : 'eye-off-outline'}
                     size={20}
-                    color="#666"
+                    color={theme.colors.textSecondary}
                   />
                 </TouchableOpacity>
               </View>
@@ -171,7 +177,7 @@ export default function LoginScreen({ navigation }: Props) {
           />
           {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
 
-          <TouchableOpacity style={styles.forgotPassword}>
+          <TouchableOpacity style={styles.forgotPassword} activeOpacity={0.7}>
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
           </TouchableOpacity>
 
@@ -179,9 +185,10 @@ export default function LoginScreen({ navigation }: Props) {
             style={styles.loginButton}
             onPress={handleSubmit(onSubmit)}
             disabled={loading}
+            activeOpacity={0.8}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={theme.colors.onPrimary} />
             ) : (
               <Text style={styles.loginButtonText}>Login</Text>
             )}
@@ -197,6 +204,7 @@ export default function LoginScreen({ navigation }: Props) {
             style={styles.socialButton}
             onPress={handleGoogleSignIn}
             disabled={googleLoading || loading}
+            activeOpacity={0.8}
           >
             {googleLoading ? (
               <ActivityIndicator size="small" color="#DB4437" />
@@ -211,6 +219,7 @@ export default function LoginScreen({ navigation }: Props) {
           <TouchableOpacity
             onPress={() => navigation.navigate('Signup')}
             style={styles.signupLink}
+            activeOpacity={0.7}
           >
             <Text style={styles.linkText}>
               Don't have an account? <Text style={styles.linkTextBold}>Sign Up</Text>
@@ -222,120 +231,125 @@ export default function LoginScreen({ navigation }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    zIndex: 1,
-  },
-  header: {
-    alignItems: 'center',
-    marginTop: 80,
-    marginBottom: 40,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-  },
-  form: {
-    paddingHorizontal: 30,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginBottom: 10,
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 12,
-    marginBottom: 10,
-    marginLeft: 5,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: 20,
-  },
-  forgotPasswordText: {
-    color: '#2196F3',
-    fontSize: 14,
-  },
-  loginButton: {
-    backgroundColor: '#2196F3',
-    borderRadius: 25,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  loginButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E0E0E0',
-  },
-  dividerText: {
-    marginHorizontal: 10,
-    color: '#666',
-    fontSize: 14,
-  },
-  socialButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 25,
-    paddingVertical: 12,
-    marginBottom: 20,
-  },
-  socialButtonText: {
-    marginLeft: 10,
-    fontSize: 16,
-    color: '#333',
-  },
-  signupLink: {
-    alignItems: 'center',
-  },
-  linkText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  linkTextBold: {
-    fontWeight: 'bold',
-    color: '#2196F3',
-  },
-})
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    keyboardView: {
+      flex: 1,
+    },
+    backButton: {
+      position: 'absolute',
+      top: 50,
+      left: 20,
+      zIndex: 1,
+    },
+    header: {
+      alignItems: 'center',
+      marginTop: 80,
+      marginBottom: 40,
+    },
+    title: {
+      fontSize: 32,
+      fontWeight: 'bold',
+      color: theme.colors.text,
+      marginBottom: 10,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+    },
+    form: {
+      paddingHorizontal: 30,
+    },
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      borderRadius: 12,
+      paddingHorizontal: 15,
+      paddingVertical: 12,
+      marginBottom: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    inputIcon: {
+      marginRight: 10,
+    },
+    input: {
+      flex: 1,
+      fontSize: 16,
+      color: theme.colors.text,
+    },
+    errorText: {
+      color: theme.colors.danger,
+      fontSize: 12,
+      marginBottom: 10,
+      marginLeft: 5,
+    },
+    forgotPassword: {
+      alignSelf: 'flex-end',
+      marginBottom: 20,
+    },
+    forgotPasswordText: {
+      color: theme.colors.primary,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    loginButton: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: 25,
+      paddingVertical: 15,
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    loginButtonText: {
+      color: theme.colors.onPrimary,
+      fontSize: 18,
+      fontWeight: 'bold',
+    },
+    divider: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: 20,
+    },
+    dividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: theme.colors.border,
+    },
+    dividerText: {
+      marginHorizontal: 10,
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+    },
+    socialButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 25,
+      paddingVertical: 12,
+      marginBottom: 20,
+      backgroundColor: theme.colors.surface,
+    },
+    socialButtonText: {
+      marginLeft: 10,
+      fontSize: 16,
+      color: theme.colors.text,
+    },
+    signupLink: {
+      alignItems: 'center',
+    },
+    linkText: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+    },
+    linkTextBold: {
+      fontWeight: 'bold',
+      color: theme.colors.primary,
+    },
+  })

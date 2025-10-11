@@ -17,6 +17,7 @@ import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { supabase } from '../../services/supabase'
 import { WelcomeScreenNavigationProp } from '../../navigation/types'
+import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
 
 const schema = yup.object({
   email: yup.string().email('Invalid email').required('Email is required'),
@@ -34,6 +35,8 @@ export default function SignupScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const { theme } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
 
   const { control, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
@@ -83,8 +86,9 @@ export default function SignupScreen({ navigation }: Props) {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
 
         <View style={styles.header}>
@@ -102,6 +106,7 @@ export default function SignupScreen({ navigation }: Props) {
                   <TextInput
                     style={styles.input}
                     placeholder="First Name"
+                    placeholderTextColor={theme.colors.textSecondary}
                     value={value}
                     onChangeText={onChange}
                     autoCapitalize="words"
@@ -117,6 +122,7 @@ export default function SignupScreen({ navigation }: Props) {
                   <TextInput
                     style={styles.input}
                     placeholder="Last Name"
+                    placeholderTextColor={theme.colors.textSecondary}
                     value={value}
                     onChangeText={onChange}
                     autoCapitalize="words"
@@ -136,10 +142,11 @@ export default function SignupScreen({ navigation }: Props) {
             name="email"
             render={({ field: { onChange, value } }) => (
               <View style={styles.inputContainer}>
-                <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
+                <Ionicons name="mail-outline" size={20} color={theme.colors.textSecondary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Email"
+                  placeholderTextColor={theme.colors.textSecondary}
                   value={value}
                   onChangeText={onChange}
                   keyboardType="email-address"
@@ -155,10 +162,11 @@ export default function SignupScreen({ navigation }: Props) {
             name="password"
             render={({ field: { onChange, value } }) => (
               <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+                <Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Password"
+                  placeholderTextColor={theme.colors.textSecondary}
                   value={value}
                   onChangeText={onChange}
                   secureTextEntry={!showPassword}
@@ -167,7 +175,7 @@ export default function SignupScreen({ navigation }: Props) {
                   <Ionicons
                     name={showPassword ? 'eye-outline' : 'eye-off-outline'}
                     size={20}
-                    color="#666"
+                    color={theme.colors.textSecondary}
                   />
                 </TouchableOpacity>
               </View>
@@ -180,10 +188,11 @@ export default function SignupScreen({ navigation }: Props) {
             name="confirmPassword"
             render={({ field: { onChange, value } }) => (
               <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+                <Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Confirm Password"
+                  placeholderTextColor={theme.colors.textSecondary}
                   value={value}
                   onChangeText={onChange}
                   secureTextEntry={!showConfirmPassword}
@@ -192,7 +201,7 @@ export default function SignupScreen({ navigation }: Props) {
                   <Ionicons
                     name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
                     size={20}
-                    color="#666"
+                    color={theme.colors.textSecondary}
                   />
                 </TouchableOpacity>
               </View>
@@ -204,9 +213,10 @@ export default function SignupScreen({ navigation }: Props) {
             style={styles.signupButton}
             onPress={handleSubmit(onSubmit)}
             disabled={loading}
+            activeOpacity={0.8}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={theme.colors.onPrimary} />
             ) : (
               <Text style={styles.signupButtonText}>Create Account</Text>
             )}
@@ -215,6 +225,7 @@ export default function SignupScreen({ navigation }: Props) {
           <TouchableOpacity
             onPress={() => navigation.navigate('Login')}
             style={styles.loginLink}
+            activeOpacity={0.7}
           >
             <Text style={styles.linkText}>
               Already have an account? <Text style={styles.linkTextBold}>Sign In</Text>
@@ -226,91 +237,95 @@ export default function SignupScreen({ navigation }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    zIndex: 1,
-  },
-  header: {
-    alignItems: 'center',
-    marginTop: 80,
-    marginBottom: 40,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-  },
-  form: {
-    paddingHorizontal: 30,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 10,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginBottom: 10,
-  },
-  halfInput: {
-    flex: 1,
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 12,
-    marginBottom: 10,
-    marginLeft: 5,
-  },
-  signupButton: {
-    backgroundColor: '#2196F3',
-    borderRadius: 25,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  signupButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  loginLink: {
-    alignItems: 'center',
-  },
-  linkText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  linkTextBold: {
-    fontWeight: 'bold',
-    color: '#2196F3',
-  },
-})
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    keyboardView: {
+      flex: 1,
+    },
+    backButton: {
+      position: 'absolute',
+      top: 50,
+      left: 20,
+      zIndex: 1,
+    },
+    header: {
+      alignItems: 'center',
+      marginTop: 80,
+      marginBottom: 40,
+    },
+    title: {
+      fontSize: 32,
+      fontWeight: 'bold',
+      color: theme.colors.text,
+      marginBottom: 10,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+    },
+    form: {
+      paddingHorizontal: 30,
+    },
+    nameRow: {
+      flexDirection: 'row',
+      gap: 10,
+      marginBottom: 10,
+    },
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      borderRadius: 12,
+      paddingHorizontal: 15,
+      paddingVertical: 12,
+      marginBottom: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    halfInput: {
+      flex: 1,
+    },
+    inputIcon: {
+      marginRight: 10,
+    },
+    input: {
+      flex: 1,
+      fontSize: 16,
+      color: theme.colors.text,
+    },
+    errorText: {
+      color: theme.colors.danger,
+      fontSize: 12,
+      marginBottom: 10,
+      marginLeft: 5,
+    },
+    signupButton: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: 25,
+      paddingVertical: 15,
+      alignItems: 'center',
+      marginTop: 20,
+      marginBottom: 20,
+    },
+    signupButtonText: {
+      color: theme.colors.onPrimary,
+      fontSize: 18,
+      fontWeight: 'bold',
+    },
+    loginLink: {
+      alignItems: 'center',
+    },
+    linkText: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+    },
+    linkTextBold: {
+      fontWeight: 'bold',
+      color: theme.colors.primary,
+    },
+  })

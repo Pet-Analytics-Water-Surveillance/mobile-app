@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { PhotoUploadService } from '../../services/PhotoUpload'
 import { supabase } from '../../services/supabase'
+import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
 
 // Define Pet type
 interface Pet {
@@ -38,6 +39,8 @@ export default function EditPetScreen() {
   const [loading, setLoading] = useState(false)
   const [loadingPet, setLoadingPet] = useState(true)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const { theme } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
   
   const [petData, setPetData] = useState({
     name: '',
@@ -197,7 +200,7 @@ export default function EditPetScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2196F3" />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>Loading pet data...</Text>
         </View>
       </SafeAreaView>
@@ -214,44 +217,48 @@ export default function EditPetScreen() {
             Add photos to enable visual recognition
           </Text>
           
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.photoContainer}
             onPress={() => handlePickImage(false)}
+            activeOpacity={0.85}
           >
             {uploadingPhoto ? (
-              <ActivityIndicator size="large" color="#2196F3" />
+              <ActivityIndicator size="large" color={theme.colors.primary} />
             ) : photoUri ? (
               <Image source={{ uri: photoUri }} style={styles.petPhoto} />
             ) : (
               <>
-                <Ionicons name="camera-outline" size={48} color="#999" />
+                <Ionicons name="camera-outline" size={48} color={theme.colors.textSecondary} />
                 <Text style={styles.photoText}>Tap to add photo</Text>
               </>
             )}
           </TouchableOpacity>
 
           <View style={styles.photoButtons}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.photoButton}
               onPress={() => handlePickImage(true)}
+              activeOpacity={0.75}
             >
-              <Ionicons name="camera" size={20} color="#2196F3" />
+              <Ionicons name="camera" size={20} color={theme.colors.primary} />
               <Text style={styles.photoButtonText}>Camera</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.photoButton}
               onPress={() => handlePickImage(false)}
+              activeOpacity={0.75}
             >
-              <Ionicons name="images" size={20} color="#2196F3" />
+              <Ionicons name="images" size={20} color={theme.colors.primary} />
               <Text style={styles.photoButtonText}>Gallery</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.photoButton}
               onPress={handleTakeMultiplePhotos}
+              activeOpacity={0.75}
             >
-              <Ionicons name="school" size={20} color="#2196F3" />
+              <Ionicons name="school" size={20} color={theme.colors.primary} />
               <Text style={styles.photoButtonText}>Train AI</Text>
             </TouchableOpacity>
           </View>
@@ -267,6 +274,7 @@ export default function EditPetScreen() {
               style={styles.input}
               value={petData.name}
               onChangeText={(text) => setPetData({ ...petData, name: text })}
+              placeholderTextColor={theme.colors.textSecondary}
               placeholder="Enter pet name"
             />
           </View>
@@ -277,6 +285,7 @@ export default function EditPetScreen() {
               style={styles.input}
               value={petData.breed}
               onChangeText={(text) => setPetData({ ...petData, breed: text })}
+              placeholderTextColor={theme.colors.textSecondary}
               placeholder="e.g., Golden Retriever"
             />
           </View>
@@ -287,6 +296,7 @@ export default function EditPetScreen() {
               style={styles.input}
               value={petData.weight}
               onChangeText={(text) => setPetData({ ...petData, weight: text })}
+              placeholderTextColor={theme.colors.textSecondary}
               placeholder="Enter weight"
               keyboardType="decimal-pad"
             />
@@ -298,6 +308,7 @@ export default function EditPetScreen() {
               style={styles.input}
               value={petData.birthDate}
               onChangeText={(text) => setPetData({ ...petData, birthDate: text })}
+              placeholderTextColor={theme.colors.textSecondary}
               placeholder="YYYY-MM-DD (optional)"
             />
           </View>
@@ -308,6 +319,7 @@ export default function EditPetScreen() {
               style={styles.input}
               value={petData.rfidTag}
               onChangeText={(text) => setPetData({ ...petData, rfidTag: text })}
+              placeholderTextColor={theme.colors.textSecondary}
               placeholder="Optional - for RFID recognition"
             />
           </View>
@@ -318,19 +330,21 @@ export default function EditPetScreen() {
               style={styles.input}
               value={petData.dailyWaterGoal}
               onChangeText={(text) => setPetData({ ...petData, dailyWaterGoal: text })}
+              placeholderTextColor={theme.colors.textSecondary}
               placeholder="500"
               keyboardType="number-pad"
             />
           </View>
         </View>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.saveButton}
           onPress={updatePet}
           disabled={loading}
+          activeOpacity={0.85}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={theme.colors.onPrimary} />
           ) : (
             <Text style={styles.saveButtonText}>Update Pet</Text>
           )}
@@ -340,117 +354,124 @@ export default function EditPetScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 0,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#666',
-  },
-  photoSection: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    marginTop: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  photoHelp: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 15,
-  },
-  photoContainer: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: '#F5F5F5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    marginBottom: 20,
-    overflow: 'hidden',
-  },
-  petPhoto: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-  },
-  photoText: {
-    marginTop: 10,
-    color: '#999',
-    fontSize: 14,
-  },
-  photoButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  photoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    backgroundColor: '#E3F2FD',
-  },
-  photoButtonText: {
-    marginLeft: 6,
-    color: '#2196F3',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  formSection: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: '#FAFAFA',
-  },
-  saveButton: {
-    backgroundColor: '#2196F3',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginBottom: 16,
-    marginHorizontal: 0,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-})
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    content: {
+      paddingHorizontal: 16,
+      paddingTop: 0,
+    },
+    photoSection: {
+      backgroundColor: theme.colors.card,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      marginTop: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: theme.colors.text,
+      marginBottom: 8,
+    },
+    photoHelp: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      marginBottom: 15,
+    },
+    photoContainer: {
+      width: 150,
+      height: 150,
+      borderRadius: 75,
+      backgroundColor: theme.colors.surface,
+      justifyContent: 'center',
+      alignItems: 'center',
+      alignSelf: 'center',
+      marginBottom: 20,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    petPhoto: {
+      width: 150,
+      height: 150,
+      borderRadius: 75,
+    },
+    photoText: {
+      marginTop: 10,
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+    },
+    photoButtons: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+    },
+    photoButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 20,
+      backgroundColor: theme.colors.overlay,
+    },
+    photoButtonText: {
+      marginLeft: 6,
+      color: theme.colors.primary,
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    formSection: {
+      backgroundColor: theme.colors.card,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    inputGroup: {
+      marginBottom: 16,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: theme.colors.text,
+      marginBottom: 8,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 15,
+      paddingVertical: 12,
+      fontSize: 16,
+      backgroundColor: theme.colors.surface,
+      color: theme.colors.text,
+    },
+    saveButton: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: 12,
+      paddingVertical: 16,
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    saveButtonText: {
+      color: theme.colors.onPrimary,
+      fontSize: 18,
+      fontWeight: '600',
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      marginTop: 12,
+      color: theme.colors.textSecondary,
+      fontSize: 16,
+    },
+  })

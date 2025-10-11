@@ -16,6 +16,7 @@ import type { HomeScreenNavigationProp } from '../../navigation/types'
 import PetHydrationCard from '../../components/specific/PetHydrationCard'
 import QuickStats from '../../components/specific/QuickStats'
 import RecentActivity from '../../components/specific/RecentActivity'
+import { AppTheme, useAppTheme, useThemedStyles, useRefreshControlColors } from '../../theme'
 
 type Pet = Database['public']['Tables']['pets']['Row']
 type Household = Database['public']['Tables']['households']['Row']
@@ -36,6 +37,9 @@ export default function HomeScreen() {
     activeDevices: 0,
     alerts: 0,
   })
+  const { theme } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
+  const refreshControlColors = useRefreshControlColors()
 
   const getGreeting = () => {
     const hour = new Date().getHours()
@@ -111,7 +115,13 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={refreshControlColors.tintColor}
+            colors={refreshControlColors.colors}
+            progressBackgroundColor={refreshControlColors.progressBackgroundColor}
+          />
         }
       >
         {/* Header */}
@@ -121,7 +131,7 @@ export default function HomeScreen() {
             <Text style={styles.householdName}>Dashboard</Text>
           </View>
           <TouchableOpacity style={styles.notificationButton}>
-            <Ionicons name="notifications-outline" size={24} color="#333" />
+            <Ionicons name="notifications-outline" size={24} color={theme.colors.text} />
             {todayStats.alerts > 0 && (
               <View style={styles.notificationBadge}>
                 <Text style={styles.badgeText}>{todayStats.alerts}</Text>
@@ -162,7 +172,7 @@ export default function HomeScreen() {
                 })
               }
             >
-              <Ionicons name="add-circle-outline" size={48} color="#2196F3" />
+              <Ionicons name="add-circle-outline" size={48} color={theme.colors.primary} />
               <Text style={styles.addPetText}>Add Pet</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -177,15 +187,15 @@ export default function HomeScreen() {
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="add-outline" size={24} color="#fff" />
+            <Ionicons name="add-outline" size={24} color={theme.colors.onPrimary} />
             <Text style={styles.actionButtonText}>Add Device</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.secondaryButton]}
             onPress={() => navigation.navigate('Statistics')}
           >
-            <Ionicons name="bar-chart-outline" size={24} color="#2196F3" />
-            <Text style={[styles.actionButtonText, { color: '#2196F3' }]}>View Stats</Text>
+            <Ionicons name="bar-chart-outline" size={24} color={theme.colors.primary} />
+            <Text style={[styles.actionButtonText, styles.secondaryButtonText]}>View Stats</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -193,119 +203,123 @@ export default function HomeScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  scrollContent: {
-    paddingBottom: 32,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-  },
-  greeting: {
-    fontSize: 16,
-    color: '#666',
-  },
-  householdName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 4,
-  },
-  notificationButton: {
-    position: 'relative',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: '#FF3B30',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  section: {
-    marginVertical: 20,
-  },
-  sectionBody: {
-    paddingHorizontal: 20,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 15,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  seeAll: {
-    fontSize: 14,
-    color: '#2196F3',
-  },
-  petsScrollView: {
-    marginHorizontal: -10, // Negative margin to offset card margins
-  },
-  petsScrollContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 5,
-  },
-  addPetCard: {
-    width: 150,
-    height: 180,
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    marginHorizontal: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#E0E0E0',
-    borderStyle: 'dashed',
-  },
-  addPetText: {
-    marginTop: 10,
-    color: '#2196F3',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  quickActions: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    gap: 15,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#2196F3',
-    paddingVertical: 15,
-    borderRadius: 12,
-    gap: 8,
-  },
-  secondaryButton: {
-    backgroundColor: '#E3F2FD',
-  },
-  actionButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-})
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    scrollContent: {
+      paddingBottom: 32,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 20,
+    },
+    greeting: {
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+    },
+    householdName: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: theme.colors.text,
+      marginTop: 4,
+    },
+    notificationButton: {
+      position: 'relative',
+    },
+    notificationBadge: {
+      position: 'absolute',
+      top: -5,
+      right: -5,
+      backgroundColor: theme.colors.danger,
+      borderRadius: 10,
+      width: 20,
+      height: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    badgeText: {
+      color: theme.colors.onPrimary,
+      fontSize: 10,
+      fontWeight: 'bold',
+    },
+    section: {
+      marginVertical: 20,
+    },
+    sectionBody: {
+      paddingHorizontal: 20,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      marginBottom: 15,
+    },
+    sectionTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: theme.colors.text,
+    },
+    seeAll: {
+      fontSize: 14,
+      color: theme.colors.primary,
+    },
+    petsScrollView: {
+      marginHorizontal: -10,
+    },
+    petsScrollContainer: {
+      paddingHorizontal: 20,
+      paddingVertical: 5,
+    },
+    addPetCard: {
+      width: 150,
+      height: 180,
+      backgroundColor: theme.colors.surface,
+      borderRadius: 15,
+      marginHorizontal: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 2,
+      borderColor: theme.colors.border,
+      borderStyle: 'dashed',
+    },
+    addPetText: {
+      marginTop: 10,
+      color: theme.colors.primary,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    quickActions: {
+      flexDirection: 'row',
+      paddingHorizontal: 20,
+      paddingVertical: 20,
+      gap: 15,
+    },
+    actionButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.primary,
+      paddingVertical: 15,
+      borderRadius: 12,
+      gap: 8,
+    },
+    secondaryButton: {
+      backgroundColor: theme.colors.overlay,
+    },
+    secondaryButtonText: {
+      color: theme.colors.primary,
+    },
+    actionButtonText: {
+      color: theme.colors.onPrimary,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  })

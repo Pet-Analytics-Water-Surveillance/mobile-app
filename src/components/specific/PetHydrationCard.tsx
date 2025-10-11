@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, Image } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../services/supabase'
+import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
 
 interface Props {
   pet: {
@@ -16,6 +17,8 @@ interface Props {
 export default function PetHydrationCard({ pet }: Props) {
   const [todayTotal, setTodayTotal] = useState(0)
   const [lastDrink, setLastDrink] = useState<string | null>(null)
+  const { theme } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
 
   useEffect(() => {
     loadTodayData()
@@ -39,11 +42,12 @@ export default function PetHydrationCard({ pet }: Props) {
     }
   }
 
-  const percentage = Math.round((todayTotal / pet.daily_water_goal_ml) * 100)
+  const goal = pet.daily_water_goal_ml || 1
+  const percentage = Math.round((todayTotal / goal) * 100)
   const getStatusColor = () => {
-    if (percentage >= 80) return '#4CAF50'
-    if (percentage >= 50) return '#FFA726'
-    return '#EF5350'
+    if (percentage >= 80) return theme.colors.success
+    if (percentage >= 50) return theme.colors.warning
+    return theme.colors.danger
   }
 
   return (
@@ -56,7 +60,7 @@ export default function PetHydrationCard({ pet }: Props) {
             <Ionicons 
               name={pet.species === 'cat' ? 'logo-octocat' : 'paw'} 
               size={24} 
-              color="#2196F3" 
+              color={theme.colors.primary} 
             />
           </View>
         )}
@@ -93,76 +97,81 @@ export default function PetHydrationCard({ pet }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  card: {
-    width: 150,
-    height: 180,
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 15,
-    marginHorizontal: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  petImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginBottom: 8,
-  },
-  petImagePlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#E3F2FD',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  petName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  progressContainer: {
-    marginBottom: 8,
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 5,
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  percentage: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'right',
-  },
-  stats: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'flex-end',
-    paddingBottom: 5,
-  },
-  statsText: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
-  },
-  lastDrinkText: {
-    fontSize: 10,
-    color: '#999',
-  },
-})
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    card: {
+      width: 150,
+      height: 180,
+      backgroundColor: theme.colors.card,
+      borderRadius: 15,
+      padding: 15,
+      marginHorizontal: 10,
+      shadowColor: theme.mode === 'dark' ? 'transparent' : '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: theme.mode === 'dark' ? 0 : 0.1,
+      shadowRadius: 3,
+      elevation: theme.mode === 'dark' ? 0 : 3,
+      borderWidth: theme.mode === 'dark' ? 1 : 0,
+      borderColor: theme.colors.border,
+    },
+    header: {
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    petImage: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      marginBottom: 8,
+    },
+    petImagePlaceholder: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      backgroundColor: theme.colors.overlay,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    petName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.text,
+    },
+    progressContainer: {
+      marginBottom: 8,
+    },
+    progressBar: {
+      height: 8,
+      backgroundColor: theme.mode === 'dark'
+        ? 'rgba(255, 255, 255, 0.12)'
+        : theme.colors.border,
+      borderRadius: 4,
+      overflow: 'hidden',
+      marginBottom: 5,
+    },
+    progressFill: {
+      height: '100%',
+      borderRadius: 4,
+    },
+    percentage: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      textAlign: 'right',
+    },
+    stats: {
+      alignItems: 'center',
+      flex: 1,
+      justifyContent: 'flex-end',
+      paddingBottom: 5,
+    },
+    statsText: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      marginBottom: 2,
+    },
+    lastDrinkText: {
+      fontSize: 10,
+      color: theme.colors.muted,
+    },
+  })

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,18 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { InviteService, HouseholdInvitation } from '../../services/InviteService';
 import { HouseholdService } from '../../services/HouseholdService';
-
-const theme = {
-  primary: '#1e90ff',
-  text: '#0f172a',
-  subtext: '#64748b',
-  bg: '#ffffff',
-  card: '#f8fafc',
-  border: '#e2e8f0',
-  danger: '#ef4444',
-  success: '#10b981',
-  warning: '#f59e0b',
-};
+import { AppTheme, useAppTheme } from '../../theme';
 
 export default function HouseholdInvites() {
   const [loading, setLoading] = useState(true);
@@ -42,6 +31,9 @@ export default function HouseholdInvites() {
   // Invite code
   const [inviteCode, setInviteCode] = useState('');
   const [showCodeModal, setShowCodeModal] = useState(false);
+  const { theme } = useAppTheme();
+  const palette = useMemo(() => buildPalette(theme), [theme]);
+  const styles = useMemo(() => createStyles(palette), [palette]);
   
 
   useEffect(() => {
@@ -189,18 +181,18 @@ export default function HouseholdInvites() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return theme.warning;
-      case 'accepted': return theme.success;
-      case 'rejected': return theme.danger;
-      case 'expired': return theme.subtext;
-      default: return theme.subtext;
+      case 'pending': return palette.warning;
+      case 'accepted': return palette.success;
+      case 'rejected': return palette.danger;
+      case 'expired': return palette.subtext;
+      default: return palette.subtext;
     }
   };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.primary} />
+        <ActivityIndicator size="large" color={palette.primary} />
         <Text style={styles.loadingText}>Loading invitations...</Text>
       </View>
     );
@@ -221,7 +213,7 @@ export default function HouseholdInvites() {
             style={styles.actionButton} 
             onPress={() => setShowSendModal(true)}
           >
-            <Ionicons name="mail-outline" size={20} color={theme.primary} />
+            <Ionicons name="mail-outline" size={20} color={palette.primary} />
             <Text style={styles.actionButtonText}>Send Email Invitation</Text>
           </TouchableOpacity>
 
@@ -229,7 +221,7 @@ export default function HouseholdInvites() {
             style={styles.actionButton} 
             onPress={generateInviteCode}
           >
-            <Ionicons name="qr-code-outline" size={20} color={theme.primary} />
+            <Ionicons name="qr-code-outline" size={20} color={palette.primary} />
             <Text style={styles.actionButtonText}>Generate Invite Code</Text>
           </TouchableOpacity>
         </View>
@@ -257,13 +249,13 @@ export default function HouseholdInvites() {
               </View>
               <View style={styles.inviteActions}>
                 <TouchableOpacity
-                  style={[styles.smallButton, { backgroundColor: theme.success }]}
+                  style={[styles.smallButton, { backgroundColor: palette.success }]}
                   onPress={() => handleAcceptInvite(invite.id)}
                 >
                   <Text style={styles.smallButtonText}>Accept</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.smallButton, { backgroundColor: theme.danger }]}
+                  style={[styles.smallButton, { backgroundColor: palette.danger }]}
                   onPress={() => handleRejectInvite(invite.id)}
                 >
                   <Text style={styles.smallButtonText}>Reject</Text>
@@ -296,7 +288,7 @@ export default function HouseholdInvites() {
               </View>
               {invite.status === 'pending' && (
                 <TouchableOpacity
-                  style={[styles.smallButton, { backgroundColor: theme.danger }]}
+                  style={[styles.smallButton, { backgroundColor: palette.danger }]}
                   onPress={() => handleCancelInvite(invite.id)}
                 >
                   <Text style={styles.smallButtonText}>Cancel</Text>
@@ -316,7 +308,7 @@ export default function HouseholdInvites() {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowSendModal(false)}>
-              <Ionicons name="close" size={24} color={theme.text} />
+              <Ionicons name="close" size={24} color={palette.text} />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Send Invitation</Text>
             <View style={{ width: 24 }} />
@@ -330,6 +322,7 @@ export default function HouseholdInvites() {
               placeholder="Enter email address"
               keyboardType="email-address"
               autoCapitalize="none"
+              placeholderTextColor={palette.subtext}
               style={styles.input}
             />
 
@@ -340,6 +333,7 @@ export default function HouseholdInvites() {
               placeholder="Add a personal message..."
               multiline
               numberOfLines={3}
+              placeholderTextColor={palette.subtext}
               style={[styles.input, { height: 80 }]}
             />
 
@@ -349,10 +343,10 @@ export default function HouseholdInvites() {
               disabled={sending}
             >
               {sending ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={palette.onPrimary} />
               ) : (
                 <>
-                  <Ionicons name="send" size={20} color="#fff" />
+                  <Ionicons name="send" size={20} color={palette.onPrimary} />
                   <Text style={styles.sendButtonText}>Send Invitation</Text>
                 </>
               )}
@@ -370,11 +364,11 @@ export default function HouseholdInvites() {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowCodeModal(false)}>
-              <Ionicons name="close" size={24} color={theme.text} />
+              <Ionicons name="close" size={24} color={palette.text} />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Invite Code</Text>
             <TouchableOpacity onPress={shareInviteCode}>
-              <Ionicons name="share-outline" size={24} color={theme.primary} />
+              <Ionicons name="share-outline" size={24} color={palette.primary} />
             </TouchableOpacity>
           </View>
 
@@ -391,7 +385,7 @@ export default function HouseholdInvites() {
               style={styles.shareButton}
               onPress={shareInviteCode}
             >
-              <Ionicons name="share-outline" size={20} color={theme.primary} />
+              <Ionicons name="share-outline" size={20} color={palette.primary} />
               <Text style={styles.shareButtonText}>Share Code</Text>
             </TouchableOpacity>
           </View>
@@ -402,136 +396,148 @@ export default function HouseholdInvites() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.bg, padding: 16 },
-  title: { fontSize: 28, fontWeight: '700', color: theme.text },
-  subtitle: { color: theme.subtext, marginBottom: 16 },
-  
-  card: {
-    backgroundColor: theme.card,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: theme.border,
-  },
-  
-  sectionTitle: { fontSize: 18, fontWeight: '600', color: theme.text, marginBottom: 12 },
-  
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: theme.bg,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.border,
-    marginBottom: 8,
-  },
-  actionButtonText: { marginLeft: 8, color: theme.primary, fontWeight: '600' },
-  
-  inviteItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: theme.bg,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  inviteInfo: { flex: 1 },
-  inviteTitle: { fontSize: 16, fontWeight: '600', color: theme.text },
-  inviteSubtitle: { fontSize: 14, color: theme.subtext, marginTop: 2 },
-  inviteMessage: { fontSize: 14, color: theme.text, fontStyle: 'italic', marginTop: 4 },
-  inviteDate: { fontSize: 12, color: theme.subtext, marginTop: 4 },
-  inviteStatus: { fontSize: 14, fontWeight: '600', marginTop: 2 },
-  
-  inviteActions: { flexDirection: 'row', gap: 8 },
-  smallButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  smallButtonText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  
-  // Modal styles
-  modalContainer: { flex: 1, backgroundColor: theme.bg },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.border,
-  },
-  modalTitle: { fontSize: 18, fontWeight: '600', color: theme.text },
-  modalContent: { padding: 16 },
-  
-  label: { fontSize: 14, fontWeight: '600', color: theme.text, marginBottom: 8 },
-  input: {
-    backgroundColor: theme.card,
-    borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    color: theme.text,
-  },
-  
-  sendButton: {
-    backgroundColor: theme.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 16,
-  },
-  sendButtonText: { color: '#fff', fontWeight: '600', marginLeft: 8 },
-  
-  codeInstructions: {
-    fontSize: 16,
-    color: theme.text,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  codeContainer: {
-    backgroundColor: theme.card,
-    borderWidth: 2,
-    borderColor: theme.primary,
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  codeText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: theme.primary,
-    letterSpacing: 4,
-  },
-  shareButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    backgroundColor: theme.card,
-    borderWidth: 1,
-    borderColor: theme.primary,
-    borderRadius: 8,
-  },
-  shareButtonText: { color: theme.primary, fontWeight: '600', marginLeft: 8 },
+type Palette = ReturnType<typeof buildPalette>
 
-  // Loading styles
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: theme.bg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: theme.subtext,
-    fontSize: 16,
-    marginTop: 16,
-  },
-});
+const buildPalette = (theme: AppTheme) => ({
+  primary: theme.colors.primary,
+  onPrimary: theme.colors.onPrimary,
+  text: theme.colors.text,
+  subtext: theme.colors.textSecondary,
+  bg: theme.colors.background,
+  card: theme.colors.card,
+  border: theme.colors.border,
+  danger: theme.colors.danger,
+  success: theme.colors.success,
+  warning: theme.colors.warning,
+})
+
+const createStyles = (palette: Palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: palette.bg, padding: 16 },
+    title: { fontSize: 28, fontWeight: '700', color: palette.text },
+    subtitle: { color: palette.subtext, marginBottom: 16 },
+    card: {
+      backgroundColor: palette.card,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 20,
+      borderWidth: 1,
+      borderColor: palette.border,
+    },
+    sectionTitle: { fontSize: 18, fontWeight: '600', color: palette.text, marginBottom: 12 },
+    actionRow: { flexDirection: 'row', gap: 12 },
+    actionButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 14,
+      borderRadius: 12,
+      backgroundColor: palette.bg,
+      borderWidth: 1,
+      borderColor: palette.border,
+      flex: 1,
+      gap: 8,
+    },
+    actionButtonText: { color: palette.primary, fontWeight: '600' },
+    inviteCard: {
+      backgroundColor: palette.card,
+      padding: 14,
+      borderRadius: 12,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: palette.border,
+    },
+    inviteItem: {
+      backgroundColor: palette.card,
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: palette.border,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 12,
+    },
+    inviteInfo: { flex: 1 },
+    inviteTitle: { fontSize: 16, fontWeight: '600', color: palette.text },
+    inviteSubtitle: { fontSize: 14, color: palette.subtext, marginTop: 2 },
+    inviteMessage: { fontSize: 14, color: palette.text, fontStyle: 'italic', marginTop: 4 },
+    inviteDate: { fontSize: 12, color: palette.subtext, marginTop: 4 },
+    inviteStatus: { fontSize: 14, fontWeight: '600', marginTop: 2 },
+    inviteActions: { flexDirection: 'row', gap: 8 },
+    smallButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 8,
+      gap: 6,
+    },
+    smallButtonText: { color: palette.onPrimary, fontSize: 12, fontWeight: '600' },
+    modalContainer: { flex: 1, backgroundColor: palette.bg },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: palette.border,
+    },
+    modalTitle: { fontSize: 18, fontWeight: '600', color: palette.text },
+    modalContent: { padding: 16, gap: 16 },
+    label: { fontSize: 14, fontWeight: '600', color: palette.text, marginBottom: 8 },
+    input: {
+      backgroundColor: palette.card,
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 12,
+      padding: 12,
+      color: palette.text,
+    },
+    textarea: {
+      backgroundColor: palette.card,
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      textAlignVertical: 'top',
+      color: palette.text,
+      minHeight: 100,
+    },
+    sendButton: {
+      backgroundColor: palette.primary,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 16,
+      borderRadius: 12,
+      gap: 8,
+    },
+    sendButtonText: { color: palette.onPrimary, fontWeight: '600' },
+    codeInstructions: { fontSize: 16, color: palette.text, textAlign: 'center' },
+    codeContainer: {
+      backgroundColor: palette.card,
+      borderWidth: 1,
+      borderColor: palette.primary,
+      borderRadius: 16,
+      padding: 24,
+      alignItems: 'center',
+    },
+    codeText: { fontSize: 32, fontWeight: 'bold', color: palette.primary, letterSpacing: 4 },
+    shareButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 16,
+      backgroundColor: palette.card,
+      borderWidth: 1,
+      borderColor: palette.primary,
+      borderRadius: 12,
+      gap: 8,
+    },
+    shareButtonText: { color: palette.primary, fontWeight: '600' },
+    loadingContainer: { flex: 1, backgroundColor: palette.bg, justifyContent: 'center', alignItems: 'center' },
+    loadingText: { marginTop: 12, color: palette.subtext },
+  });

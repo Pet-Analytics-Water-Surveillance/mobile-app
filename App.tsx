@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { Linking, Alert } from 'react-native'
 import * as Notifications from 'expo-notifications'
 import AppNavigator from './src/navigation/AppNavigator'
+import { ThemeProvider, useAppTheme } from './src/theme'
 import { supabase } from './src/services/supabase'
 import { EmailVerificationService } from './src/services/EmailVerificationService'
 import { GoogleAuthService } from './src/services/GoogleAuthService'
@@ -13,7 +14,6 @@ const queryClient = new QueryClient()
 
 export default function App() {
   useEffect(() => {
-    // Setup notifications
     setupNotifications()
     
     // Setup deep linking for email verification
@@ -21,14 +21,12 @@ export default function App() {
   }, [])
 
   const setupNotifications = async () => {
-    // Request notification permissions
     const { status } = await Notifications.requestPermissionsAsync()
     if (status !== 'granted') {
       console.log('Notification permissions not granted')
       return
     }
 
-    // Configure notification behavior
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
@@ -113,10 +111,22 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <StatusBar style="auto" />
-        <AppNavigator />
-      </QueryClientProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemedApp />
+        </QueryClientProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
+  )
+}
+
+function ThemedApp() {
+  const { theme } = useAppTheme()
+
+  return (
+    <>
+      <StatusBar style={theme.statusBarStyle} backgroundColor="transparent" />
+      <AppNavigator />
+    </>
   )
 }
