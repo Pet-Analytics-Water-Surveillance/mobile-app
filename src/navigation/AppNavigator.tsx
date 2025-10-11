@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack'
+import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../services/supabase'
 import AuthNavigator from './AuthNavigator'
 import MainNavigator from './MainNavigator'
@@ -9,7 +10,7 @@ import { RootStackParamList } from './types'
 const Stack = createStackNavigator<RootStackParamList>()
 
 export default function AppNavigator() {
-  const [session, setSession] = useState(null)
+  const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
