@@ -2,7 +2,7 @@
   "expo": {
     "name": "PAWS",
     "slug": "paws-water-monitor",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -82,9 +82,7 @@
         "android.permission.VIBRATE",
         "android.permission.RECORD_AUDIO"
       ],
-      "usesCleartextTraffic": false,
-      "allowBackup": true,
-      "targetSdkVersion": 34
+      "allowBackup": true
     },
     "web": {
       "favicon": "./assets/favicon.png"

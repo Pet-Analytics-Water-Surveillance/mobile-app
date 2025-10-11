@@ -13,6 +13,7 @@ import EditPetScreen from '../screens/PetManagement/EditPetScreen'
 import DeviceScanScreen from '../screens/DeviceSetup/DeviceScanScreen'
 import WiFiSetupScreen from '../screens/DeviceSetup/WiFiSetupScreen'
 import SetupCompleteScreen from '../screens/DeviceSetup/SetupCompleteScreen'
+import DeviceListScreen from '../screens/DeviceSetup/DeviceListScreen'
 import { MainTabParamList, SettingsStackParamList } from './types'
 import AccountProfile from '../screens/Settings/AccountProfile'
 import HouseholdInvites from '../screens/Settings/HouseholdInvites'
@@ -110,6 +111,11 @@ function SettingsNavigator() {
         name="SetupComplete" 
         component={SetupCompleteScreen}
         options={{ title: 'Setup Complete' }}
+      />
+      <SettingsStack.Screen 
+        name="DeviceList" 
+        component={DeviceListScreen}
+        options={{ title: 'My Devices' }}
       />
     </SettingsStack.Navigator>
   )

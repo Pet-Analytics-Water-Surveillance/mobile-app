@@ -11,55 +11,112 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
-import { Device } from 'react-native-ble-plx'
 import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
+import { bleService, ScannedDevice } from '../../services/bluetooth/BLEService'
 
 export default function DeviceScanScreen() {
   const navigation = useNavigation<any>()
   const [scanning, setScanning] = useState(false)
-  const [devices, setDevices] = useState<Device[]>([])
+  const [devices, setDevices] = useState<ScannedDevice[]>([])
+  const [bluetoothEnabled, setBluetoothEnabled] = useState(false)
   const { theme } = useAppTheme()
   const styles = useThemedStyles(createStyles)
 
   useEffect(() => {
-    startScan()
+    initializeBluetooth()
     
     return () => {
       // Cleanup scan when component unmounts
-      // BluetoothService.stopScan()
+      bleService.stopScan()
     }
   }, [])
 
-  const startScan = () => {
-    setScanning(true)
-    setDevices([])
-    
-    // Simulate device discovery for demo purposes
-    // In real app, this would use BluetoothService.scanForDevices()
-    setTimeout(() => {
-      const mockDevices = [
-        {
-          id: 'device-1',
-          name: 'Pet Hydration Device #1',
-          localName: 'Pet Hydration Device #1',
+  const initializeBluetooth = async () => {
+    try {
+      const initialized = await bleService.initialize()
+      setBluetoothEnabled(initialized)
+
+      if (initialized) {
+        startScan()
+      } else {
+        Alert.alert(
+          'Bluetooth Required',
+          'Please enable Bluetooth to scan for devices.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Try Again', onPress: initializeBluetooth },
+          ]
+        )
+      }
+    } catch (error) {
+      console.error('Bluetooth initialization error:', error)
+      Alert.alert('Error', 'Failed to initialize Bluetooth. Please try again.')
+    }
+  }
+
+  const startScan = async () => {
+    try {
+      setScanning(true)
+      setDevices([])
+
+      await bleService.scanForDevices(
+        (device) => {
+          // Add device to list (avoid duplicates)
+          setDevices((prev) => {
+            const exists = prev.find((d) => d.id === device.id)
+            if (exists) return prev
+            return [...prev, device]
+          })
         },
-        {
-          id: 'device-2',
-          name: 'Pet Hydration Device #2',
-          localName: 'Pet Hydration Device #2',
-        },
-      ] as any
-      
-      setDevices(mockDevices)
+        10000 // Scan for 10 seconds
+      )
+
       setScanning(false)
-    }, 3000)
+    } catch (error) {
+      console.error('Scan error:', error)
+      setScanning(false)
+      Alert.alert('Scan Error', 'Failed to scan for devices. Please try again.')
+    }
   }
 
-  const connectToDevice = (device: Device) => {
-    navigation.navigate('WiFiSetup', { deviceId: device.id })
+  const connectToDevice = async (device: ScannedDevice) => {
+    try {
+      Alert.alert(
+        'Connect to Device',
+        `Connect to ${device.name}?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Connect',
+            onPress: async () => {
+              try {
+                // Stop scanning
+                bleService.stopScan()
+                
+                // Show connecting indicator
+                Alert.alert('Connecting', 'Please wait...', [], { cancelable: false })
+                
+                // Connect to device
+                await bleService.connect(device.id)
+                
+                // Navigate to WiFi setup
+                navigation.navigate('WiFiSetup', { 
+                  deviceId: device.id,
+                  deviceName: device.name 
+                })
+              } catch (error: any) {
+                Alert.alert('Connection Failed', error.message || 'Could not connect to device.')
+              }
+            },
+          },
+        ]
+      )
+    } catch (error) {
+      console.error('Connect error:', error)
+    }
   }
 
-  const renderDevice = ({ item }: { item: Device }) => (
+  const renderDevice = ({ item }: { item: ScannedDevice }) => (
     <TouchableOpacity
       style={styles.deviceCard}
       onPress={() => connectToDevice(item)}
@@ -70,7 +127,7 @@ export default function DeviceScanScreen() {
       </View>
       <View style={styles.deviceInfo}>
         <Text style={styles.deviceName}>{item.name || 'Unknown Device'}</Text>
-        <Text style={styles.deviceId}>ID: {item.id}</Text>
+        <Text style={styles.deviceId}>Signal: {item.rssi} dBm</Text>
       </View>
       <Ionicons name="chevron-forward" size={20} color={theme.colors.muted} />
     </TouchableOpacity>
