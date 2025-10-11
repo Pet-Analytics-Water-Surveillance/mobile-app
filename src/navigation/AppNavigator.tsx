@@ -5,6 +5,7 @@ import {
   NavigationContainer,
 } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack'
+import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../services/supabase'
 import AuthNavigator from './AuthNavigator'
 import MainNavigator from './MainNavigator'

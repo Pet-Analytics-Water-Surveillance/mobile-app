@@ -7,6 +7,7 @@ export type AuthStackParamList = {
   Welcome: undefined
   Login: undefined
   Signup: undefined
+  EmailVerification: { email: string }
 }
 
 // Main Tab Navigator

@@ -60,18 +60,15 @@ export default function SignupScreen({ navigation }: Props) {
           data: {
             first_name: data.firstName,
             last_name: data.lastName,
-          }
+          },
+          emailRedirectTo: 'paws://auth/callback'
         }
       })
 
       if (error) {
         Alert.alert('Signup Error', error.message)
       } else {
-        Alert.alert(
-          'Success!', 
-          'Please check your email to verify your account before signing in.',
-          [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
-        )
+        navigation.navigate('EmailVerification', { email: data.email })
       }
     } catch (error) {
       Alert.alert('Error', 'Something went wrong. Please try again.')

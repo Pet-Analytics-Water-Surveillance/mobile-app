@@ -16,6 +16,8 @@ import { useForm, Controller } from 'react-hook-form'
 import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { supabase } from '../../services/supabase'
+import { EmailVerificationService } from '../../services/EmailVerificationService'
+import { GoogleAuthService } from '../../services/GoogleAuthService'
 import { LoginScreenNavigationProp } from '../../navigation/types'
 import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
 
@@ -30,6 +32,7 @@ interface Props {
 
 export default function LoginScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const { theme } = useAppTheme()
   const styles = useThemedStyles(createStyles)
@@ -44,17 +47,68 @@ export default function LoginScreen({ navigation }: Props) {
 
   const onSubmit = async (data: any) => {
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({
-      email: data.email,
-      password: data.password,
-    })
+    
+    try {
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      })
 
-    setLoading(false)
-
-    if (error) {
-      Alert.alert('Login Error', error.message)
+      if (error) {
+        Alert.alert('Login Error', error.message)
+      } else if (signInData.user && !signInData.user.email_confirmed_at) {
+        // User exists but email not verified
+        Alert.alert(
+          'Email Not Verified',
+          'Please check your email and click the verification link before signing in. Check your spam folder if you don\'t see it.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Resend Email', 
+              onPress: () => resendVerificationEmail(data.email)
+            }
+          ]
+        )
+        // Sign out the unverified user
+        await supabase.auth.signOut()
+      }
+      // Navigation handled by auth state listener in AppNavigator
+    } catch (error) {
+      Alert.alert('Error', 'Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
     }
-    // Navigation handled by auth state listener in AppNavigator
+  }
+
+  const resendVerificationEmail = async (email: string) => {
+    try {
+      await EmailVerificationService.resendVerificationEmail(email)
+      Alert.alert(
+        'Verification Email Sent',
+        'We\'ve sent a new verification email. Please check your inbox and spam folder.'
+      )
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to resend verification email. Please try again.')
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true)
+    
+    try {
+      const result = await GoogleAuthService.signInWithGoogle()
+      
+      if (result.success) {
+        // Success is handled by the auth state listener in AppNavigator
+        console.log('Google sign-in successful')
+      } else {
+        Alert.alert('Google Sign-In Failed', result.error || 'Failed to sign in with Google. Please try again.')
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'An error occurred during Google sign-in.')
+    } finally {
+      setGoogleLoading(false)
+    }
   }
 
   return (
@@ -146,9 +200,20 @@ export default function LoginScreen({ navigation }: Props) {
             <View style={styles.dividerLine} />
           </View>
 
-          <TouchableOpacity style={styles.socialButton} activeOpacity={0.8}>
-            <Ionicons name="logo-google" size={20} color="#DB4437" />
-            <Text style={styles.socialButtonText}>Continue with Google</Text>
+          <TouchableOpacity 
+            style={styles.socialButton}
+            onPress={handleGoogleSignIn}
+            disabled={googleLoading || loading}
+            activeOpacity={0.8}
+          >
+            {googleLoading ? (
+              <ActivityIndicator size="small" color="#DB4437" />
+            ) : (
+              <Ionicons name="logo-google" size={20} color="#DB4437" />
+            )}
+            <Text style={styles.socialButtonText}>
+              {googleLoading ? 'Signing in...' : 'Continue with Google'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
