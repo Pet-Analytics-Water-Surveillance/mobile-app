@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   View,
   Text,
@@ -11,6 +11,23 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit'
 import { supabase } from '../../services/supabase'
+import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
+
+const hexToRgba = (hex: string, opacity = 1): string => {
+  const normalized = hex.replace('#', '')
+  const expand = normalized.length === 3
+    ? normalized
+        .split('')
+        .map(char => char + char)
+        .join('')
+    : normalized
+
+  const int = parseInt(expand, 16)
+  const r = (int >> 16) & 255
+  const g = (int >> 8) & 255
+  const b = int & 255
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`
+}
 
 const { width } = Dimensions.get('window')
 const SCROLL_HORIZONTAL_PADDING = 20
@@ -73,86 +90,10 @@ export default function StatisticsScreen(): React.ReactElement {
     barData: { labels: [], datasets: [{ data: [] }] },
     pieData: [],
   })
+  const { theme } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
 
-  useEffect(() => {
-    loadStatistics()
-  }, [selectedPeriod])
-
-  const loadStatistics = async (): Promise<void> => {
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: member } = await supabase
-      .from('household_members')
-      .select('household_id')
-      .eq('user_id', user?.id)
-      .single()
-
-    if (member) {
-      const endDate = new Date()
-      endDate.setHours(23, 59, 59, 999)
-      const startDate = new Date(endDate)
-      
-      switch (selectedPeriod) {
-        case 'week':
-          startDate.setDate(endDate.getDate() - 6)
-          break
-        case 'month':
-          startDate.setMonth(endDate.getMonth() - 1)
-          break
-        case 'year':
-          startDate.setMonth(endDate.getMonth() - 11)
-          startDate.setDate(1)
-          break
-      }
-
-      startDate.setHours(0, 0, 0, 0)
-
-      // Load hydration events
-      const { data: events } = await supabase
-        .from('hydration_events')
-        .select(`
-          amount_ml,
-          timestamp,
-          pet_id,
-          pets (name)
-        `)
-        .gte('timestamp', startDate.toISOString())
-        .lte('timestamp', endDate.toISOString())
-        .order('timestamp', { ascending: true })
-
-      if (events) {
-        const eventsTyped = (events ?? []) as HydrationEvent[]
-        const totalWater = eventsTyped.reduce((sum: number, e: HydrationEvent) => sum + e.amount_ml, 0)
-        const totalEvents = eventsTyped.length
-        const averagePerDay = totalWater / Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-
-        // Group by pet
-        const petStats: Record<string, PetStat> = {}
-        eventsTyped.forEach((event: HydrationEvent) => {
-          const petName = event.pets?.name || 'Unknown'
-          if (!petStats[petName]) {
-            petStats[petName] = { total: 0, count: 0 }
-          }
-          petStats[petName].total += event.amount_ml
-          petStats[petName].count += 1
-        })
-
-        const sortedEntries = Object.entries(petStats) as [string, PetStat][]
-        const topPet = sortedEntries.sort(([, a], [, b]) => b.total - a.total)[0]
-
-        setStats({
-          totalWater,
-          averagePerDay: Math.round(averagePerDay),
-          totalEvents,
-          topPet: topPet ? { name: topPet[0], amount: topPet[1].total } : null,
-        })
-
-        // Prepare chart data
-        prepareChartData(eventsTyped, startDate, endDate, petStats)
-      }
-    }
-  }
-
-  const prepareChartData = (
+  const prepareChartData = useCallback((
     events: HydrationEvent[],
     startDate: Date,
     endDate: Date,
@@ -250,9 +191,8 @@ export default function StatisticsScreen(): React.ReactElement {
       labels: lineLabels,
       datasets: [{
         data: lineValues,
-        color: (opacity = 1) => `rgba(33, 150, 243, ${opacity})`,
         strokeWidth: 2,
-      }]
+      }],
     }
 
     // Bar chart data (pet comparison)
@@ -264,16 +204,95 @@ export default function StatisticsScreen(): React.ReactElement {
     }
 
     // Pie chart data (pet distribution)
+    const piePalette = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7']
     const pieData: PieDatum[] = Object.entries(petStats).map(([name, data], index) => ({
       name,
       population: (data as PetStat).total,
-      color: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'][index % 5],
-      legendFontColor: '#7F7F7F',
+      color: piePalette[index % piePalette.length],
+      legendFontColor: theme.colors.text,
       legendFontSize: 12,
     }))
 
     setChartData({ lineData, barData, pieData })
-  }
+  }, [selectedPeriod, theme.colors.text])
+
+  const loadStatistics = useCallback(async (): Promise<void> => {
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data: member } = await supabase
+      .from('household_members')
+      .select('household_id')
+      .eq('user_id', user?.id)
+      .single()
+
+    if (member) {
+      const endDate = new Date()
+      endDate.setHours(23, 59, 59, 999)
+      const startDate = new Date(endDate)
+      
+      switch (selectedPeriod) {
+        case 'week':
+          startDate.setDate(endDate.getDate() - 6)
+          break
+        case 'month':
+          startDate.setMonth(endDate.getMonth() - 1)
+          break
+        case 'year':
+          startDate.setMonth(endDate.getMonth() - 11)
+          startDate.setDate(1)
+          break
+      }
+
+      startDate.setHours(0, 0, 0, 0)
+
+      // Load hydration events
+      const { data: events } = await supabase
+        .from('hydration_events')
+        .select(`
+          amount_ml,
+          timestamp,
+          pet_id,
+          pets (name)
+        `)
+        .gte('timestamp', startDate.toISOString())
+        .lte('timestamp', endDate.toISOString())
+        .order('timestamp', { ascending: true })
+
+      if (events) {
+        const eventsTyped = (events ?? []) as HydrationEvent[]
+        const totalWater = eventsTyped.reduce((sum: number, e: HydrationEvent) => sum + e.amount_ml, 0)
+        const totalEvents = eventsTyped.length
+        const averagePerDay = totalWater / Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+
+        // Group by pet
+        const petStats: Record<string, PetStat> = {}
+        eventsTyped.forEach((event: HydrationEvent) => {
+          const petName = event.pets?.name || 'Unknown'
+          if (!petStats[petName]) {
+            petStats[petName] = { total: 0, count: 0 }
+          }
+          petStats[petName].total += event.amount_ml
+          petStats[petName].count += 1
+        })
+
+        const sortedEntries = Object.entries(petStats) as [string, PetStat][]
+        const topPet = sortedEntries.sort(([, a], [, b]) => b.total - a.total)[0]
+
+        setStats({
+          totalWater,
+          averagePerDay: Math.round(averagePerDay),
+          totalEvents,
+          topPet: topPet ? { name: topPet[0], amount: topPet[1].total } : null,
+        })
+
+        // Prepare chart data
+        prepareChartData(eventsTyped, startDate, endDate, petStats)
+      }
+    }
+  }, [prepareChartData, selectedPeriod])
+
+  useEffect(() => {
+    loadStatistics()
+  }, [loadStatistics])
 
   const lineChartWidth = useMemo(() => {
     if (selectedPeriod === 'year') {
@@ -286,6 +305,74 @@ export default function StatisticsScreen(): React.ReactElement {
   }, [chartData.lineData, selectedPeriod])
 
   const enableLineChartScroll = selectedPeriod === 'year' && lineChartWidth > chartWidth
+
+  const lineDataWithTheme = useMemo<LineData>(
+    () => ({
+      labels: chartData.lineData.labels,
+      datasets: chartData.lineData.datasets.map(dataset => ({
+        ...dataset,
+        color: (opacity = 1) => hexToRgba(theme.colors.primary, opacity),
+      })),
+    }),
+    [chartData.lineData.datasets, chartData.lineData.labels, theme.colors.primary]
+  )
+
+  const pieDataWithTheme = useMemo<PieDatum[]>(
+    () =>
+      chartData.pieData.map(entry => ({
+        ...entry,
+        legendFontColor: theme.colors.text,
+      })),
+    [chartData.pieData, theme.colors.text]
+  )
+
+  const lineChartConfig = useMemo(
+    () => ({
+      backgroundColor: theme.colors.card,
+      backgroundGradientFrom: theme.colors.card,
+      backgroundGradientTo: theme.colors.card,
+      decimalPlaces: 0,
+      color: (opacity = 1) => hexToRgba(theme.colors.primary, opacity),
+      labelColor: (opacity = 1) => hexToRgba(theme.colors.text, opacity),
+      propsForDots: {
+        r: '6',
+        strokeWidth: '2',
+        stroke: theme.colors.primary,
+      },
+      propsForBackgroundLines: {
+        stroke: theme.colors.border,
+      },
+      style: {
+        borderRadius: 16,
+      },
+    }),
+    [theme.colors.border, theme.colors.card, theme.colors.primary, theme.colors.text]
+  )
+
+  const barChartConfig = useMemo(
+    () => ({
+      backgroundColor: theme.colors.card,
+      backgroundGradientFrom: theme.colors.card,
+      backgroundGradientTo: theme.colors.card,
+      decimalPlaces: 0,
+      color: (opacity = 1) => hexToRgba(theme.colors.success, opacity),
+      labelColor: (opacity = 1) => hexToRgba(theme.colors.text, opacity),
+      propsForBackgroundLines: {
+        stroke: theme.colors.border,
+      },
+      style: {
+        borderRadius: 16,
+      },
+    }),
+    [theme.colors.border, theme.colors.card, theme.colors.success, theme.colors.text]
+  )
+
+  const pieChartConfig = useMemo(
+    () => ({
+      color: (opacity = 1) => hexToRgba(theme.colors.text, opacity),
+    }),
+    [theme.colors.text]
+  )
 
   const StatCard = ({ title, value, subtitle, icon, color }: {
     title: string
@@ -309,7 +396,7 @@ export default function StatisticsScreen(): React.ReactElement {
       <View style={styles.header}>
         <Text style={styles.title}>Hydration Statistics</Text>
         <TouchableOpacity>
-          <Ionicons name="share-outline" size={24} color="#333" />
+          <Ionicons name="share-outline" size={24} color={theme.colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -342,14 +429,14 @@ export default function StatisticsScreen(): React.ReactElement {
             value={`${stats.totalWater}ml`}
             subtitle={`${stats.averagePerDay}ml/day avg`}
             icon="water"
-            color="#4FC3F7"
+            color={theme.colors.info}
           />
           <StatCard
             title="Total Events"
             value={stats.totalEvents}
             subtitle="Drinking sessions"
             icon="list"
-            color="#4CAF50"
+            color={theme.colors.success}
           />
           {stats.topPet && (
             <StatCard
@@ -357,7 +444,7 @@ export default function StatisticsScreen(): React.ReactElement {
               value={stats.topPet.name}
               subtitle={`${stats.topPet.amount}ml`}
               icon="paw"
-              color="#FF9800"
+              color={theme.colors.warning}
             />
           )}
         </View>
@@ -374,25 +461,10 @@ export default function StatisticsScreen(): React.ReactElement {
               >
                 <View style={styles.chartWrapper}>
                   <LineChart
-                    data={chartData.lineData}
+                    data={lineDataWithTheme}
                     width={lineChartWidth}
                     height={220}
-                    chartConfig={{
-                      backgroundColor: '#fff',
-                      backgroundGradientFrom: '#fff',
-                      backgroundGradientTo: '#fff',
-                      decimalPlaces: 0,
-                      color: (opacity = 1) => `rgba(33, 150, 243, ${opacity})`,
-                      labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                      style: {
-                        borderRadius: 16,
-                      },
-                      propsForDots: {
-                        r: '6',
-                        strokeWidth: '2',
-                        stroke: '#2196F3',
-                      },
-                    }}
+                    chartConfig={lineChartConfig}
                     bezier
                     style={styles.chart}
                     yLabelsOffset={8}
@@ -402,25 +474,10 @@ export default function StatisticsScreen(): React.ReactElement {
             ) : (
               <View style={styles.chartWrapper}>
                 <LineChart
-                  data={chartData.lineData}
+                  data={lineDataWithTheme}
                   width={lineChartWidth}
                   height={220}
-                  chartConfig={{
-                    backgroundColor: '#fff',
-                    backgroundGradientFrom: '#fff',
-                    backgroundGradientTo: '#fff',
-                    decimalPlaces: 0,
-                    color: (opacity = 1) => `rgba(33, 150, 243, ${opacity})`,
-                    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                    style: {
-                      borderRadius: 16,
-                    },
-                    propsForDots: {
-                      r: '6',
-                      strokeWidth: '2',
-                      stroke: '#2196F3',
-                    },
-                  }}
+                  chartConfig={lineChartConfig}
                   bezier
                   style={styles.chart}
                   yLabelsOffset={8}
@@ -439,17 +496,7 @@ export default function StatisticsScreen(): React.ReactElement {
                 data={chartData.barData as any}
                 width={chartWidth}
                 height={220}
-                chartConfig={{
-                  backgroundColor: '#fff',
-                  backgroundGradientFrom: '#fff',
-                  backgroundGradientTo: '#fff',
-                  decimalPlaces: 0,
-                  color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                  style: {
-                    borderRadius: 16,
-                  },
-                } as any}
+                chartConfig={barChartConfig as any}
                 style={styles.chart}
                 yAxisLabel={''}
                 yAxisSuffix={''}
@@ -465,12 +512,10 @@ export default function StatisticsScreen(): React.ReactElement {
             <Text style={styles.chartTitle}>Water Distribution by Pet</Text>
             <View style={styles.chartWrapper}>
               <PieChart
-                data={chartData.pieData}
+                data={pieDataWithTheme}
                 width={chartWidth}
                 height={220}
-                chartConfig={{
-                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                }}
+                chartConfig={pieChartConfig}
                 accessor="population"
                 backgroundColor="transparent"
                 paddingLeft="15"
@@ -484,116 +529,119 @@ export default function StatisticsScreen(): React.ReactElement {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    //backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  periodSelector: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    //backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  periodButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    marginRight: 10,
-    borderRadius: 20,
-    backgroundColor: '#F5F5F5',
-  },
-  periodButtonActive: {
-    backgroundColor: '#2196F3',
-  },
-  periodButtonText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-  },
-  periodButtonTextActive: {
-    color: '#fff',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  statsGrid: {
-    marginTop: 20,
-  },
-  statCard: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  statHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  statTitle: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 8,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
-  },
-  statSubtitle: {
-    fontSize: 12,
-    color: '#999',
-  },
-  chartContainer: {
-    backgroundColor: '#fff',
-    marginTop: 20,
-    paddingVertical: 14,
-    paddingHorizontal: CARD_HORIZONTAL_PADDING,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  chartTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-  chart: {
-    borderRadius: 12,
-  },
-  horizontalChartContent: {
-    paddingRight: 16,
-  },
-  chartWrapper: {
-    marginLeft: -8,
-    paddingRight: 8,
-  },
-})
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 15,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: theme.colors.text,
+    },
+    periodSelector: {
+      flexDirection: 'row',
+      paddingHorizontal: 20,
+      paddingVertical: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    periodButton: {
+      paddingHorizontal: 20,
+      paddingVertical: 8,
+      marginRight: 10,
+      borderRadius: 20,
+      backgroundColor: theme.colors.overlay,
+    },
+    periodButtonActive: {
+      backgroundColor: theme.colors.primary,
+    },
+    periodButtonText: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      fontWeight: '500',
+    },
+    periodButtonTextActive: {
+      color: theme.colors.onPrimary,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 20,
+    },
+    statsGrid: {
+      marginTop: 20,
+    },
+    statCard: {
+      backgroundColor: theme.colors.card,
+      padding: 20,
+      borderRadius: 12,
+      borderLeftWidth: 4,
+      marginBottom: 15,
+      shadowColor: theme.mode === 'dark' ? 'transparent' : '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: theme.mode === 'dark' ? 0 : 0.05,
+      shadowRadius: 3,
+      elevation: theme.mode === 'dark' ? 0 : 2,
+      borderWidth: theme.mode === 'dark' ? 1 : 0,
+      borderColor: theme.colors.border,
+    },
+    statHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    statTitle: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      marginLeft: 8,
+    },
+    statValue: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: theme.colors.text,
+      marginBottom: 5,
+    },
+    statSubtitle: {
+      fontSize: 12,
+      color: theme.colors.muted,
+    },
+    chartContainer: {
+      backgroundColor: theme.colors.card,
+      marginTop: 20,
+      paddingVertical: 14,
+      paddingHorizontal: CARD_HORIZONTAL_PADDING,
+      borderRadius: 12,
+      shadowColor: theme.mode === 'dark' ? 'transparent' : '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: theme.mode === 'dark' ? 0 : 0.05,
+      shadowRadius: 3,
+      elevation: theme.mode === 'dark' ? 0 : 2,
+      borderWidth: theme.mode === 'dark' ? 1 : 0,
+      borderColor: theme.colors.border,
+    },
+    chartTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: theme.colors.text,
+      marginBottom: 15,
+      textAlign: 'center',
+    },
+    chart: {
+      borderRadius: 12,
+    },
+    horizontalChartContent: {
+      paddingRight: 16,
+    },
+    chartWrapper: {
+      marginLeft: -8,
+      paddingRight: 8,
+    },
+  })

@@ -12,11 +12,13 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
 import { supabase } from '../../services/supabase'
+import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
 
 export default function SettingsScreen() {
   const navigation = useNavigation<any>()
   const [notifications, setNotifications] = React.useState(true)
-  const [darkMode, setDarkMode] = React.useState(false)
+  const { isDarkMode, toggleThemeMode, theme } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
 
   const handleSignOut = () => {
     Alert.alert(
@@ -35,23 +37,26 @@ export default function SettingsScreen() {
     )
   }
 
-  const SettingItem = ({ 
-    icon, 
-    title, 
-    subtitle, 
-    onPress, 
-    showArrow = true, 
-    rightComponent 
+  const SettingItem = ({
+    icon,
+    title,
+    subtitle,
+    onPress,
+    showArrow = true,
+    rightComponent,
   }: any) => (
-    <TouchableOpacity style={styles.settingItem} onPress={onPress}>
+    <TouchableOpacity style={styles.settingItem} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.settingIcon}>
-        <Ionicons name={icon} size={24} color="#2196F3" />
+        <Ionicons name={icon} size={24} color={theme.colors.primary} />
       </View>
       <View style={styles.settingContent}>
         <Text style={styles.settingTitle}>{title}</Text>
         {subtitle && <Text style={styles.settingSubtitle}>{subtitle}</Text>}
       </View>
-      {rightComponent || (showArrow && <Ionicons name="chevron-forward" size={20} color="#C0C0C0" />)}
+      {rightComponent ||
+        (showArrow && (
+          <Ionicons name="chevron-forward" size={20} color={theme.colors.muted} />
+        ))}
     </TouchableOpacity>
   )
 
@@ -113,8 +118,8 @@ export default function SettingsScreen() {
                 <Switch
                   value={notifications}
                   onValueChange={setNotifications}
-                  trackColor={{ false: '#E0E0E0', true: '#81C784' }}
-                  thumbColor={notifications ? '#4CAF50' : '#f4f3f4'}
+                  trackColor={{ false: theme.colors.border, true: theme.colors.switchTrack }}
+                  thumbColor={notifications ? theme.colors.switchThumb : theme.colors.surface}
                 />
               }
             />
@@ -125,10 +130,13 @@ export default function SettingsScreen() {
               showArrow={false}
               rightComponent={
                 <Switch
-                  value={darkMode}
-                  onValueChange={setDarkMode}
-                  trackColor={{ false: '#E0E0E0', true: '#81C784' }}
-                  thumbColor={darkMode ? '#4CAF50' : '#f4f3f4'}
+                  value={isDarkMode}
+                  onValueChange={toggleThemeMode}
+                  trackColor={{
+                    false: theme.colors.border,
+                    true: theme.colors.switchTrack,
+                  }}
+                  thumbColor={isDarkMode ? theme.colors.switchThumb : theme.colors.surface}
                 />
               }
             />
@@ -160,7 +168,7 @@ export default function SettingsScreen() {
 
         {/* Sign Out */}
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-          <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
+          <Ionicons name="log-out-outline" size={20} color={theme.colors.danger} />
           <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -168,85 +176,86 @@ export default function SettingsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    //backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  title: {
-    fontSize: 34,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  section: {
-    marginTop: 30,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    textTransform: 'uppercase',
-    marginLeft: 20,
-    marginBottom: 10,
-  },
-  sectionContent: {
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    backgroundColor: '#fff',
-  },
-  settingIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#E3F2FD',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  settingContent: {
-    flex: 1,
-  },
-  settingTitle: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 2,
-  },
-  settingSubtitle: {
-    fontSize: 13,
-    color: '#999',
-  },
-  signOutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 30,
-    marginBottom: 50,
-    paddingVertical: 15,
-    marginHorizontal: 20,
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FF3B30',
-  },
-  signOutText: {
-    marginLeft: 10,
-    fontSize: 16,
-    color: '#FF3B30',
-    fontWeight: '600',
-  },
-})
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    header: {
+      paddingHorizontal: 20,
+      paddingVertical: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+      //backgroundColor: theme.colors.surface,
+    },
+    title: {
+      fontSize: 34,
+      fontWeight: 'bold',
+      color: theme.colors.text,
+    },
+    section: {
+      marginTop: 30,
+    },
+    sectionTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.muted,
+      textTransform: 'uppercase',
+      marginLeft: 20,
+      marginBottom: 10,
+    },
+    sectionContent: {
+      backgroundColor: theme.colors.surface,
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    settingItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      backgroundColor: theme.colors.surface,
+    },
+    settingIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.colors.overlay,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 15,
+    },
+    settingContent: {
+      flex: 1,
+    },
+    settingTitle: {
+      fontSize: 16,
+      color: theme.colors.text,
+      marginBottom: 2,
+    },
+    settingSubtitle: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+    },
+    signOutButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 30,
+      marginBottom: 50,
+      paddingVertical: 15,
+      marginHorizontal: 20,
+      backgroundColor: theme.colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.danger,
+    },
+    signOutText: {
+      marginLeft: 10,
+      fontSize: 16,
+      color: theme.colors.danger,
+      fontWeight: '600',
+    },
+  })

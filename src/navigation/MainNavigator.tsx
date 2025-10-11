@@ -16,14 +16,33 @@ import SetupCompleteScreen from '../screens/DeviceSetup/SetupCompleteScreen'
 import { MainTabParamList, SettingsStackParamList } from './types'
 import AccountProfile from '../screens/Settings/AccountProfile'
 import HouseholdInvites from '../screens/Settings/HouseholdInvites'
+import { useAppTheme } from '../theme'
 
 
 const Tab = createBottomTabNavigator<MainTabParamList>()
 const SettingsStack = createStackNavigator<SettingsStackParamList>()
 
 function SettingsNavigator() {
+  const { theme } = useAppTheme()
+
+  const headerOptions = React.useMemo(
+    () => ({
+      headerStyle: {
+        backgroundColor: theme.colors.card,
+        shadowColor: 'transparent',
+        borderBottomWidth: 0,
+      },
+      headerTintColor: theme.colors.text,
+      headerTitleStyle: {
+        color: theme.colors.text,
+      },
+      headerBackTitleVisible: false,
+    }),
+    [theme]
+  )
+
   return (
-    <SettingsStack.Navigator screenOptions={{ headerShown: true }}>
+    <SettingsStack.Navigator screenOptions={{ ...headerOptions, headerShown: true }}>
       <SettingsStack.Screen 
         name="SettingsList" 
         component={SettingsScreen}
@@ -67,7 +86,7 @@ function SettingsNavigator() {
                 }
               }}
             >
-              <Ionicons name="chevron-back" size={24} color="#2196F3" />
+              <Ionicons name="chevron-back" size={24} color={theme.colors.primary} />
             </TouchableOpacity>
           ),
         })}
@@ -97,6 +116,8 @@ function SettingsNavigator() {
 }
 
 export default function MainNavigator() {
+  const { theme } = useAppTheme()
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -122,9 +143,20 @@ export default function MainNavigator() {
 
           return <Ionicons name={iconName as any} size={size} color={color} />
         },
-        tabBarActiveTintColor: '#2196F3',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.muted,
+        tabBarStyle: {
+          backgroundColor: theme.colors.tabBarBackground,
+          borderTopColor: theme.colors.tabBarBorder,
+        },
+        tabBarLabelStyle: {
+          fontWeight: '500',
+        },
         headerShown: false,
+        tabBarHideOnKeyboard: true,
+        sceneStyle: {
+          backgroundColor: theme.colors.background,
+        },
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
