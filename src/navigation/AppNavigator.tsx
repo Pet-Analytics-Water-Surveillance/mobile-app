@@ -11,7 +11,6 @@ import AuthNavigator from './AuthNavigator'
 import MainNavigator from './MainNavigator'
 import { RootStackParamList } from './types'
 import { useAppTheme } from '../theme'
-import type { Session } from '@supabase/supabase-js'
 
 const Stack = createStackNavigator<RootStackParamList>()
 
