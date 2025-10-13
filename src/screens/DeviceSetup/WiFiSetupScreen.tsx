@@ -134,52 +134,42 @@ export default function WiFiSetupScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="wifi" size={48} color={theme.colors.primary} />
-            </View>
-            <Text style={styles.title}>Configure Device</Text>
-            <Text style={styles.subtitle}>
-              Connect your device to WiFi and complete setup
-            </Text>
-          </View>
+          <Text style={styles.title}>Configure Device</Text>
+          <Text style={styles.subtitle}>
+            Connect your device to WiFi and complete setup
+          </Text>
 
           {/* Device Info */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Device</Text>
-            <View style={styles.infoCard}>
-              <Text style={styles.infoText}>{deviceName || 'Pet Fountain'}</Text>
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Device</Text>
+            <View style={styles.deviceInfoRow}>
+              <View style={styles.deviceIconLarge}>
+                <Ionicons name="wifi" size={32} color={theme.colors.primary} />
+              </View>
+              <Text style={styles.deviceNameText}>{deviceName || 'Pet Fountain'}</Text>
             </View>
           </View>
 
-          {/* WiFi Network */}
-          <View style={styles.section}>
-            <Text style={styles.label}>WiFi Network *</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="wifi-outline" size={20} color={theme.colors.muted} />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter WiFi network name (SSID)"
-                placeholderTextColor={theme.colors.muted}
-                value={wifiSSID}
-                onChangeText={setWifiSSID}
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!provisioning}
-              />
-            </View>
-            <Text style={styles.hint}>
-              ⚠️ Device only supports 2.4GHz WiFi networks
-            </Text>
-          </View>
+          {/* WiFi Credentials */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>WiFi Network</Text>
+            
+            <Text style={styles.label}>Network Name (SSID) *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter WiFi network name"
+              placeholderTextColor={theme.colors.muted}
+              value={wifiSSID}
+              onChangeText={setWifiSSID}
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!provisioning}
+            />
 
-          {/* WiFi Password */}
-          <View style={styles.section}>
-            <Text style={styles.label}>WiFi Password *</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color={theme.colors.muted} />
+            <Text style={styles.label}>Password *</Text>
+            <View style={styles.passwordContainer}>
               <TextInput
-                style={styles.input}
+                style={styles.passwordInput}
                 placeholder="Enter WiFi password"
                 placeholderTextColor={theme.colors.muted}
                 value={wifiPassword}
@@ -189,7 +179,10 @@ export default function WiFiSetupScreen() {
                 autoCorrect={false}
                 editable={!provisioning}
               />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <TouchableOpacity 
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeButton}
+              >
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
@@ -197,29 +190,34 @@ export default function WiFiSetupScreen() {
                 />
               </TouchableOpacity>
             </View>
+            
+            <Text style={styles.helper}>
+              ⚠️ Device only supports 2.4GHz WiFi networks
+            </Text>
           </View>
 
           {/* Device Name (Optional) */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Device Name (Optional)</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="create-outline" size={20} color={theme.colors.muted} />
-              <TextInput
-                style={styles.input}
-                placeholder="e.g., Living Room Fountain"
-                placeholderTextColor={theme.colors.muted}
-                value={deviceDisplayName}
-                onChangeText={setDeviceDisplayName}
-                editable={!provisioning}
-              />
-            </View>
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Custom Name (Optional)</Text>
+            
+            <Text style={styles.label}>Device Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., Living Room Fountain"
+              placeholderTextColor={theme.colors.muted}
+              value={deviceDisplayName}
+              onChangeText={setDeviceDisplayName}
+              editable={!provisioning}
+            />
           </View>
 
           {/* Progress Indicator */}
           {provisioning && (
-            <View style={styles.progressContainer}>
-              <ActivityIndicator size="large" color={theme.colors.primary} />
-              <Text style={styles.progressText}>{currentStep}</Text>
+            <View style={styles.card}>
+              <View style={styles.progressContainer}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <Text style={styles.progressText}>{currentStep}</Text>
+              </View>
             </View>
           )}
 
@@ -234,8 +232,8 @@ export default function WiFiSetupScreen() {
               <ActivityIndicator color={theme.colors.onPrimary} />
             ) : (
               <>
+                <Ionicons name="checkmark-circle-outline" size={20} color={theme.colors.onPrimary} />
                 <Text style={styles.setupButtonText}>Complete Setup</Text>
-                <Ionicons name="arrow-forward" size={20} color={theme.colors.onPrimary} />
               </>
             )}
           </TouchableOpacity>
@@ -255,83 +253,101 @@ const createStyles = (theme: AppTheme) =>
       flex: 1,
     },
     scrollContent: {
-      padding: 20,
+      padding: 16,
+      paddingBottom: 40,
+      gap: 12,
     },
-    header: {
+    title: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: theme.colors.text,
+    },
+    subtitle: {
+      color: theme.colors.textSecondary,
+      marginBottom: 8,
+    },
+    card: {
+      backgroundColor: theme.colors.card,
+      borderRadius: 14,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      shadowColor: theme.mode === 'dark' ? 'transparent' : '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: theme.mode === 'dark' ? 0 : 0.05,
+      shadowRadius: 2,
+      elevation: theme.mode === 'dark' ? 0 : 1,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.colors.text,
+      marginBottom: 12,
+    },
+    deviceInfoRow: {
+      flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 30,
+      gap: 12,
     },
-    iconContainer: {
-      width: 80,
-      height: 80,
-      borderRadius: 40,
+    deviceIconLarge: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
       backgroundColor: theme.colors.overlay,
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: 15,
     },
-    title: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: theme.colors.text,
-      marginBottom: 8,
-    },
-    subtitle: {
-      fontSize: 14,
-      color: theme.colors.textSecondary,
-      textAlign: 'center',
-    },
-    section: {
-      marginBottom: 20,
-    },
-    label: {
-      fontSize: 14,
+    deviceNameText: {
+      fontSize: 16,
       fontWeight: '600',
       color: theme.colors.text,
-      marginBottom: 8,
+      flex: 1,
     },
-    inputContainer: {
+    label: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      marginTop: 8,
+      marginBottom: 6,
+    },
+    input: {
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 16,
+      color: theme.colors.text,
+    },
+    passwordContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.colors.surface,
-      borderRadius: 12,
-      paddingHorizontal: 15,
-      paddingVertical: 12,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      gap: 10,
+      borderRadius: 12,
     },
-    input: {
+    passwordInput: {
       flex: 1,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
       fontSize: 16,
       color: theme.colors.text,
     },
-    hint: {
-      fontSize: 12,
+    eyeButton: {
+      padding: 10,
+    },
+    helper: {
       color: theme.colors.warning,
+      fontSize: 12,
       marginTop: 6,
-    },
-    infoCard: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: 12,
-      padding: 15,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-    },
-    infoText: {
-      fontSize: 16,
-      color: theme.colors.text,
-      fontWeight: '500',
     },
     progressContainer: {
       alignItems: 'center',
-      marginVertical: 20,
-      padding: 20,
-      backgroundColor: theme.colors.overlay,
-      borderRadius: 12,
+      paddingVertical: 30,
     },
     progressText: {
-      marginTop: 15,
+      marginTop: 16,
       fontSize: 14,
       color: theme.colors.textSecondary,
       textAlign: 'center',
@@ -341,17 +357,17 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.primary,
-      paddingVertical: 16,
+      paddingVertical: 14,
       borderRadius: 12,
-      marginTop: 10,
-      gap: 10,
+      marginTop: 8,
+      gap: 8,
     },
     setupButtonDisabled: {
       opacity: 0.6,
     },
     setupButtonText: {
       fontSize: 16,
-      fontWeight: '600',
+      fontWeight: '700',
       color: theme.colors.onPrimary,
     },
   })

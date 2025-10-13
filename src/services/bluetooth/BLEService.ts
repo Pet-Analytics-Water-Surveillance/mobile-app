@@ -39,26 +39,33 @@ class BLEService {
   async initialize(): Promise<boolean> {
 
     try {
+      console.log('🔵 Starting BLE initialization...')
+      
       // Request permissions on Android
       if (Platform.OS === 'android') {
+        console.log('📱 Requesting Android BLE permissions...')
         const granted = await this.requestAndroidPermissions()
         if (!granted) {
-          console.error('BLE permissions not granted')
+          console.error('❌ BLE permissions not granted')
           return false
         }
+        console.log('✓ Android permissions granted')
       }
 
       // Check if Bluetooth is powered on
+      console.log('🔍 Checking Bluetooth state...')
       const state = await this.manager.state()
+      console.log('Bluetooth state:', state)
+      
       if (state !== State.PoweredOn) {
-        console.warn('Bluetooth is not powered on:', state)
+        console.warn('⚠️ Bluetooth is not powered on:', state)
         return false
       }
 
-      console.log('✓ BLE initialized successfully')
+      console.log('✅ BLE initialized successfully')
       return true
     } catch (error) {
-      console.error('BLE initialization error:', error)
+      console.error('❌ BLE initialization error:', error)
       return false
     }
   }
@@ -96,33 +103,53 @@ class BLEService {
    */
   async scanForDevices(
     onDeviceFound: (device: ScannedDevice) => void,
-    durationMs: number = 10000
+    durationMs: number = 10000,
+    onAllDevices?: (device: ScannedDevice) => void
   ): Promise<void> {
     try {
-      console.log('Starting BLE scan...')
+      console.log('🔍 Starting BLE scan...')
+      console.log(`⏱️  Scan duration: ${durationMs}ms (${durationMs / 1000}s)`)
+      console.log(`🎯 Looking for devices with prefix: "${DEVICE_NAME_PREFIX}"`)
+      
       const foundDevices = new Map<string, ScannedDevice>()
+      let scanCount = 0
 
       this.scanSubscription = this.manager.startDeviceScan(
         null, // Scan for all devices
         { allowDuplicates: false },
         (error, device) => {
           if (error) {
-            console.error('Scan error:', error)
+            console.error('❌ Scan error:', error)
             return
           }
 
-          if (device && device.name?.includes(DEVICE_NAME_PREFIX)) {
+          if (device) {
+            scanCount++
+            
             const scannedDevice: ScannedDevice = {
               id: device.id,
               name: device.name || 'Unknown Device',
               rssi: device.rssi || -100,
             }
-
-            // Only report new devices
-            if (!foundDevices.has(device.id)) {
-              foundDevices.set(device.id, scannedDevice)
-              onDeviceFound(scannedDevice)
-              console.log('Found device:', scannedDevice)
+            
+            // Log all devices for debugging (even non-matching ones)
+            if (scanCount <= 10) { // Only log first 10 to avoid spam
+              console.log(`📱 Discovered device ${scanCount}: "${device.name || 'No name'}" (ID: ${device.id})`)
+            }
+            
+            // Report all devices for debug mode
+            if (onAllDevices) {
+              onAllDevices(scannedDevice)
+            }
+            
+            // Check if it's a PetFountain device
+            if (device.name?.includes(DEVICE_NAME_PREFIX)) {
+              // Only report new matching devices
+              if (!foundDevices.has(device.id)) {
+                foundDevices.set(device.id, scannedDevice)
+                onDeviceFound(scannedDevice)
+                console.log('✅ Found matching PetFountain device:', scannedDevice)
+              }
             }
           }
         }
@@ -131,10 +158,16 @@ class BLEService {
       // Auto-stop scan after duration
       setTimeout(() => {
         this.stopScan()
-        console.log(`Scan stopped after ${durationMs}ms. Found ${foundDevices.size} devices.`)
+        console.log(`⏹️  Scan stopped after ${durationMs}ms`)
+        console.log(`📊 Total devices scanned: ${scanCount}`)
+        console.log(`🎯 Matching PetFountain devices found: ${foundDevices.size}`)
+        if (foundDevices.size === 0 && scanCount > 0) {
+          console.log(`ℹ️  No devices with name containing "${DEVICE_NAME_PREFIX}" were found`)
+          console.log(`💡 Make sure your device is powered on and advertising with the correct name`)
+        }
       }, durationMs)
     } catch (error) {
-      console.error('Error starting scan:', error)
+      console.error('❌ Error starting scan:', error)
       throw error
     }
   }

@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../services/supabase'
 import type { Database } from '../../services/supabase'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, CommonActions } from '@react-navigation/native'
 import type { HomeScreenNavigationProp } from '../../navigation/types'
 import PetHydrationCard from '../../components/specific/PetHydrationCard'
 import QuickStats from '../../components/specific/QuickStats'
@@ -237,11 +237,13 @@ export default function HomeScreen() {
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() =>
+            onPress={() => {
+              // Navigate to Settings tab and DeviceSetup screen with fromHome flag
               navigation.navigate('Settings', {
                 screen: 'DeviceSetup',
+                params: { fromHome: true },
               })
-            }
+            }}
           >
             <Ionicons name="add-outline" size={24} color={theme.colors.onPrimary} />
             <Text style={styles.actionButtonText}>Add Device</Text>

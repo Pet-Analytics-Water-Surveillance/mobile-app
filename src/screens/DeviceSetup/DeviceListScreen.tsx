@@ -3,10 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   RefreshControl,
   Alert,
+  ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -182,51 +183,67 @@ export default function DeviceListScreen() {
     </TouchableOpacity>
   )
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <Ionicons name="hardware-chip-outline" size={64} color={theme.colors.muted} />
-      <Text style={styles.emptyTitle}>No Devices Yet</Text>
-      <Text style={styles.emptyText}>
-        Add your first Pet Fountain device to start tracking hydration
-      </Text>
-      <TouchableOpacity style={styles.addButton} onPress={handleAddDevice}>
-        <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
-        <Text style={styles.addButtonText}>Add Device</Text>
-      </TouchableOpacity>
-    </View>
-  )
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loadingText}>Loading devices...</Text>
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>My Devices</Text>
-        <TouchableOpacity onPress={handleAddDevice} style={styles.headerButton}>
-          <Ionicons name="add-circle-outline" size={28} color={theme.colors.primary} />
-        </TouchableOpacity>
-      </View>
-
-      {loading && devices.length === 0 ? (
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading devices...</Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={refreshControlColors.tintColor}
+            colors={refreshControlColors.colors}
+            progressBackgroundColor={refreshControlColors.progressBackgroundColor}
+          />
+        }
+      >
+        {/* Header */}
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.title}>My Devices</Text>
+            <Text style={styles.subtitle}>Manage your Pet Fountain devices</Text>
+          </View>
+          <TouchableOpacity onPress={handleAddDevice} style={styles.addIconButton}>
+            <Ionicons name="add-circle" size={32} color={theme.colors.primary} />
+          </TouchableOpacity>
         </View>
-      ) : (
-        <FlatList
-          data={devices}
-          renderItem={renderDevice}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={renderEmptyState}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={refreshControlColors.tintColor}
-              colors={refreshControlColors.colors}
-              progressBackgroundColor={refreshControlColors.progressBackgroundColor}
-            />
-          }
-        />
-      )}
+
+        {/* Devices List */}
+        {devices.length > 0 ? (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Connected Devices ({devices.length})</Text>
+            {devices.map((item) => renderDevice({ item }))}
+          </View>
+        ) : (
+          /* Empty State */
+          <View style={styles.card}>
+            <View style={styles.emptyState}>
+              <Ionicons name="hardware-chip-outline" size={64} color={theme.colors.muted} />
+              <Text style={styles.emptyTitle}>No Devices Yet</Text>
+              <Text style={styles.emptyText}>
+                Add your first Pet Fountain device to start tracking hydration
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Add Device Button */}
+        <TouchableOpacity style={styles.addButton} onPress={handleAddDevice} activeOpacity={0.8}>
+          <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
+          <Text style={styles.addButtonText}>Add New Device</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   )
 }
@@ -237,22 +254,46 @@ const createStyles = (theme: AppTheme) =>
       flex: 1,
       backgroundColor: theme.colors.background,
     },
-    header: {
+    scrollContent: {
+      padding: 16,
+      paddingBottom: 40,
+      gap: 12,
+    },
+    headerRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingHorizontal: 20,
-      paddingVertical: 15,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
+      marginBottom: 4,
     },
     title: {
-      fontSize: 34,
-      fontWeight: 'bold',
+      fontSize: 28,
+      fontWeight: '700',
       color: theme.colors.text,
     },
-    headerButton: {
-      padding: 5,
+    subtitle: {
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+    addIconButton: {
+      padding: 4,
+    },
+    card: {
+      backgroundColor: theme.colors.card,
+      borderRadius: 14,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      shadowColor: theme.mode === 'dark' ? 'transparent' : '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: theme.mode === 'dark' ? 0 : 0.05,
+      shadowRadius: 2,
+      elevation: theme.mode === 'dark' ? 0 : 1,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.colors.text,
+      marginBottom: 12,
     },
     loadingContainer: {
       flex: 1,
@@ -262,33 +303,26 @@ const createStyles = (theme: AppTheme) =>
     loadingText: {
       fontSize: 16,
       color: theme.colors.textSecondary,
-    },
-    listContent: {
-      padding: 20,
+      marginTop: 16,
     },
     deviceCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme.colors.card,
-      padding: 16,
+      backgroundColor: theme.colors.surface,
+      padding: 12,
       borderRadius: 12,
-      marginBottom: 12,
+      marginBottom: 8,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      shadowColor: theme.mode === 'dark' ? 'transparent' : '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: theme.mode === 'dark' ? 0 : 0.05,
-      shadowRadius: 3,
-      elevation: theme.mode === 'dark' ? 0 : 2,
     },
     deviceIcon: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
+      width: 48,
+      height: 48,
+      borderRadius: 24,
       backgroundColor: theme.colors.overlay,
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: 15,
+      marginRight: 12,
     },
     deviceInfo: {
       flex: 1,
@@ -297,12 +331,12 @@ const createStyles = (theme: AppTheme) =>
       fontSize: 16,
       fontWeight: '600',
       color: theme.colors.text,
-      marginBottom: 6,
+      marginBottom: 4,
     },
     deviceMeta: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 4,
+      marginBottom: 2,
       gap: 6,
     },
     statusText: {
@@ -327,39 +361,35 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.muted,
     },
     emptyState: {
-      flex: 1,
       alignItems: 'center',
-      justifyContent: 'center',
-      paddingTop: 100,
-      paddingHorizontal: 40,
+      paddingVertical: 60,
     },
     emptyTitle: {
-      fontSize: 20,
-      fontWeight: 'bold',
+      fontSize: 18,
+      fontWeight: '600',
       color: theme.colors.text,
-      marginTop: 20,
-      marginBottom: 10,
+      marginTop: 16,
+      marginBottom: 8,
     },
     emptyText: {
-      fontSize: 15,
+      fontSize: 14,
       color: theme.colors.textSecondary,
       textAlign: 'center',
-      lineHeight: 22,
-      marginBottom: 30,
+      lineHeight: 20,
     },
     addButton: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.primary,
-      paddingHorizontal: 24,
       paddingVertical: 14,
       borderRadius: 12,
       gap: 8,
+      marginTop: 8,
     },
     addButtonText: {
       fontSize: 16,
-      fontWeight: '600',
+      fontWeight: '700',
       color: theme.colors.onPrimary,
     },
   })
