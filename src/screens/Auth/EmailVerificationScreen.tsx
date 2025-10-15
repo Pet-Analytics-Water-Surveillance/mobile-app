@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { EmailVerificationService } from '../../services/EmailVerificationService'
+import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
 
 interface Props {
   navigation: any
@@ -23,6 +24,8 @@ interface Props {
 export default function EmailVerificationScreen({ navigation, route }: Props) {
   const [loading, setLoading] = useState(false)
   const { email } = route.params
+  const { theme } = useAppTheme()
+  const styles = useThemedStyles(createStyles)
 
   const resendVerificationEmail = async () => {
     setLoading(true)
@@ -46,12 +49,12 @@ export default function EmailVerificationScreen({ navigation, route }: Props) {
         style={styles.backButton}
         onPress={() => navigation.goBack()}
       >
-        <Ionicons name="arrow-back" size={24} color="#333" />
+        <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
       </TouchableOpacity>
 
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Ionicons name="mail-outline" size={80} color="#2196F3" />
+          <Ionicons name="mail-outline" size={80} color={theme.colors.primary} />
         </View>
 
         <Text style={styles.title}>Check Your Email</Text>
@@ -85,12 +88,12 @@ export default function EmailVerificationScreen({ navigation, route }: Props) {
             Don't see the email? Check your spam folder or
           </Text>
           <TouchableOpacity
-            style={styles.resendButton}
+            style={[styles.resendButton, loading && styles.resendButtonDisabled]}
             onPress={resendVerificationEmail}
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator size="small" color="#2196F3" />
+              <ActivityIndicator size="small" color={theme.colors.primary} />
             ) : (
               <Text style={styles.resendButtonText}>Resend Email</Text>
             )}
@@ -108,105 +111,112 @@ export default function EmailVerificationScreen({ navigation, route }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    zIndex: 1,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  iconContainer: {
-    marginBottom: 30,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 5,
-  },
-  email: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2196F3',
-    textAlign: 'center',
-    marginBottom: 40,
-  },
-  instructionsContainer: {
-    width: '100%',
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 30,
-  },
-  instructionsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 15,
-  },
-  instruction: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  stepNumber: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2196F3',
-    marginRight: 10,
-    minWidth: 20,
-  },
-  stepText: {
-    fontSize: 14,
-    color: '#666',
-    flex: 1,
-  },
-  helpContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  helpText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  resendButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  resendButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2196F3',
-  },
-  loginButton: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 25,
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    alignItems: 'center',
-  },
-  loginButtonText: {
-    color: '#333',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-})
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    backButton: {
+      position: 'absolute',
+      top: 110,
+      left: 20,
+      zIndex: 1,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 30,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    iconContainer: {
+      marginBottom: 30,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: theme.colors.text,
+      marginBottom: 10,
+      textAlign: 'center',
+    },
+    subtitle: {
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+      marginBottom: 5,
+    },
+    email: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.primary,
+      textAlign: 'center',
+      marginBottom: 40,
+    },
+    instructionsContainer: {
+      width: '100%',
+      backgroundColor: theme.mode === 'dark' ? theme.colors.card : '#F8F9FA',
+      borderRadius: 12,
+      padding: 20,
+      marginBottom: 30,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    instructionsTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.text,
+      marginBottom: 15,
+    },
+    instruction: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      marginBottom: 10,
+    },
+    stepNumber: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.primary,
+      marginRight: 10,
+      minWidth: 20,
+    },
+    stepText: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      flex: 1,
+    },
+    helpContainer: {
+      alignItems: 'center',
+      marginBottom: 30,
+    },
+    helpText: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+      marginBottom: 10,
+    },
+    resendButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 20,
+    },
+    resendButtonDisabled: {
+      opacity: 0.6,
+    },
+    resendButtonText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.primary,
+    },
+    loginButton: {
+      backgroundColor: theme.mode === 'dark' ? theme.colors.card : '#F5F5F5',
+      borderRadius: 25,
+      paddingVertical: 15,
+      paddingHorizontal: 40,
+      alignItems: 'center',
+    },
+    loginButtonText: {
+      color: theme.colors.text,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  })

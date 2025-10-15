@@ -39,14 +39,13 @@ export default function WelcomeScreen({ navigation }: Props) {
     theme.mode,
   ])
 
-  const buttonGradient = React.useMemo(
-    () => (
-      theme.mode === 'dark'
-        ? ([theme.colors.primary, theme.colors.primary] as const)
-        : ([theme.colors.surface, theme.colors.card] as const)
-    ),
-    [theme.colors.card, theme.colors.primary, theme.colors.surface, theme.mode]
-  )
+  const buttonGradient = React.useMemo(() => {
+    if (theme.mode === 'dark') {
+      return [theme.colors.primary, theme.colors.primary] as const
+    }
+
+    return ['rgba(255, 255, 255, 0.92)', 'rgba(240, 249, 253, 0.92)'] as const
+  }, [theme.colors.primary, theme.mode])
 
   const features = [
     { icon: '💧', text: 'Real-time water tracking' },
@@ -169,11 +168,16 @@ const createStyles = (theme: AppTheme) =>
       marginTop: 20,
       borderRadius: 25,
       overflow: 'hidden',
+      borderWidth: theme.mode === 'dark' ? 0 : 2,
+      borderColor: theme.mode === 'dark'
+        ? 'transparent'
+        : 'rgba(255, 255, 255, 0.9)',
     },
     buttonGradient: {
       paddingVertical: 15,
       alignItems: 'center',
       justifyContent: 'center',
+      borderRadius: 23,
       shadowColor: theme.mode === 'dark' ? 'transparent' : '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: theme.mode === 'dark' ? 0 : 0.2,
