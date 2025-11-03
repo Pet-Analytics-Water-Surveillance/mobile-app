@@ -1,12 +1,13 @@
 import { BleManager, Device, State } from 'react-native-ble-plx'
 import { Platform, PermissionsAndroid } from 'react-native'
-import { encode as base64Encode } from 'base-64'
+import { encode as base64Encode, decode as base64Decode } from 'base-64'
 
 // BLE UUIDs - Match firmware configuration
 const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b'
 const WIFI_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8'
 const SUPABASE_CHAR_UUID = '1c95d5e3-d8f7-413a-bf3d-7a2e5d7be87e'
 const USER_CHAR_UUID = '9a8ca5ed-2b1f-4b5e-9c3d-5e8f7a9d4c3b'
+const STATUS_CHAR_UUID = '7d4c3b2a-1e9f-4a5b-8c7d-6e5f4a3b2c1d'
 const DEVICE_NAME_PREFIX = 'PetFountain'
 
 export interface DeviceCredentials {
@@ -24,10 +25,23 @@ export interface ScannedDevice {
   rssi: number
 }
 
+export type ProvisioningStatus = 
+  | 'connected'
+  | 'wifi_received' 
+  | 'supabase_received'
+  | 'user_received'
+  | 'provisioning_complete'
+
+export interface ProvisioningCallbacks {
+  onStatusUpdate: (status: ProvisioningStatus, message: string) => void
+  onError?: (error: Error) => void
+}
+
 class BLEService {
   private manager: BleManager
   private connectedDevice: Device | null = null
   private scanSubscription: any = null
+  private statusSubscription: any = null
 
   constructor() {
     this.manager = new BleManager()
@@ -219,6 +233,9 @@ class BLEService {
   async disconnect(): Promise<void> {
     if (this.connectedDevice) {
       try {
+        // Cleanup status subscription
+        this.unsubscribeFromStatus()
+        
         await this.manager.cancelDeviceConnection(this.connectedDevice.id)
         console.log('✓ Disconnected from device')
       } catch (error) {
@@ -229,47 +246,150 @@ class BLEService {
   }
 
   /**
-   * Provision device with credentials
+   * Subscribe to status notifications from device
    */
-  async provisionDevice(credentials: DeviceCredentials): Promise<void> {
+  async subscribeToStatus(
+    onStatusUpdate: (status: string) => void
+  ): Promise<void> {
     if (!this.connectedDevice) {
       throw new Error('No device connected')
     }
 
     try {
-      console.log('Starting provisioning...')
+      console.log('📡 Subscribing to status notifications...')
+      
+      // Unsubscribe from any existing subscription
+      if (this.statusSubscription) {
+        this.statusSubscription.remove()
+        this.statusSubscription = null
+      }
+
+      // Subscribe to status characteristic notifications
+      this.statusSubscription = this.connectedDevice.monitorCharacteristicForService(
+        SERVICE_UUID,
+        STATUS_CHAR_UUID,
+        (error, characteristic) => {
+          if (error) {
+            console.error('❌ Status monitoring error:', error)
+            return
+          }
+
+          if (characteristic?.value) {
+            try {
+              // Decode base64 value to string
+              const statusValue = base64Decode(characteristic.value)
+              console.log('📱 Status update received:', statusValue)
+              onStatusUpdate(statusValue)
+            } catch (decodeError) {
+              console.error('❌ Error decoding status:', decodeError)
+            }
+          }
+        }
+      )
+
+      console.log('✅ Status notifications enabled')
+    } catch (error) {
+      console.error('❌ Error subscribing to status:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Unsubscribe from status notifications
+   */
+  unsubscribeFromStatus(): void {
+    if (this.statusSubscription) {
+      this.statusSubscription.remove()
+      this.statusSubscription = null
+      console.log('✓ Unsubscribed from status notifications')
+    }
+  }
+
+  /**
+   * Provision device with credentials - Step-by-step flow with status monitoring
+   */
+  async provisionDevice(
+    credentials: DeviceCredentials,
+    callbacks: ProvisioningCallbacks
+  ): Promise<void> {
+    if (!this.connectedDevice) {
+      throw new Error('No device connected')
+    }
+
+    try {
+      console.log('🔧 Starting provisioning flow...')
+
+      // Subscribe to status notifications
+      await this.subscribeToStatus((status) => {
+        console.log(`📊 Provisioning status: ${status}`)
+        
+        switch (status) {
+          case 'connected':
+            callbacks.onStatusUpdate('connected', 'Connected to device')
+            break
+          case 'wifi_received':
+            callbacks.onStatusUpdate('wifi_received', 'WiFi credentials received')
+            break
+          case 'supabase_received':
+            callbacks.onStatusUpdate('supabase_received', 'Supabase config received')
+            break
+          case 'user_received':
+            callbacks.onStatusUpdate('user_received', 'Saving configuration...')
+            break
+          case 'provisioning_complete':
+            callbacks.onStatusUpdate('provisioning_complete', 'Setup complete! Device restarting...')
+            break
+        }
+      })
+
+      // Wait a moment for subscription to be ready
+      await this.delay(500)
 
       // Step 1: Send WiFi credentials
+      console.log('📡 Step 1: Sending WiFi credentials...')
       await this.writeCharacteristic(WIFI_CHAR_UUID, {
         ssid: credentials.wifiSSID,
         password: credentials.wifiPassword,
       })
-      console.log('✓ WiFi credentials sent')
+      console.log('✅ WiFi credentials sent')
+      
+      // Wait for firmware to process (status will be notified)
       await this.delay(1000)
 
       // Step 2: Send Supabase credentials
+      console.log('📡 Step 2: Sending Supabase configuration...')
       await this.writeCharacteristic(SUPABASE_CHAR_UUID, {
         url: credentials.supabaseUrl,
         anon_key: credentials.supabaseKey,
       })
-      console.log('✓ Supabase credentials sent')
+      console.log('✅ Supabase config sent')
+      
+      // Wait for firmware to process
       await this.delay(1000)
 
-      // Step 3: Send User ID and Household ID (triggers device restart)
+      // Step 3: Send User ID (triggers save and restart)
+      console.log('📡 Step 3: Sending user ID...')
       await this.writeCharacteristic(USER_CHAR_UUID, {
         user_id: credentials.userId,
-        household_id: credentials.householdId,
       })
-      console.log('✓ User credentials sent - Device will restart')
+      console.log('✅ User ID sent - Device will save and restart')
 
-      // Device will restart after receiving user credentials
-      // Wait a bit then disconnect
-      await this.delay(2000)
-      await this.disconnect()
+      // Wait for provisioning_complete status (firmware sends it before restart)
+      // We'll give it 5 seconds max
+      await this.delay(5000)
 
-      console.log('✓ Provisioning complete')
+      // Cleanup
+      this.unsubscribeFromStatus()
+      
+      console.log('✅ Provisioning flow complete')
     } catch (error) {
-      console.error('Provisioning error:', error)
+      console.error('❌ Provisioning error:', error)
+      this.unsubscribeFromStatus()
+      
+      if (callbacks.onError) {
+        callbacks.onError(error as Error)
+      }
+      
       throw new Error('Failed to provision device. Please try again.')
     }
   }
@@ -322,6 +442,7 @@ class BLEService {
    */
   destroy(): void {
     this.stopScan()
+    this.unsubscribeFromStatus()
     if (this.connectedDevice) {
       this.disconnect()
     }

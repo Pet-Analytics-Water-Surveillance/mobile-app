@@ -15,9 +15,18 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
-import { bleService, DeviceCredentials } from '../../services/bluetooth/BLEService'
+import { bleService, DeviceCredentials, ProvisioningStatus } from '../../services/bluetooth/BLEService'
 import { deviceService } from '../../services/DeviceService'
 import { supabase } from '../../services/supabase'
+
+type ProvisioningStep = {
+  id: number
+  status: ProvisioningStatus
+  label: string
+  icon: string
+  completed: boolean
+  active: boolean
+}
 
 export default function WiFiSetupScreen() {
   const navigation = useNavigation<any>()
@@ -30,9 +39,34 @@ export default function WiFiSetupScreen() {
   const [deviceDisplayName, setDeviceDisplayName] = useState('')
   const [provisioning, setProvisioning] = useState(false)
   const [currentStep, setCurrentStep] = useState<string>('')
+  const [provisioningSteps, setProvisioningSteps] = useState<ProvisioningStep[]>([
+    { id: 1, status: 'connected', label: 'Connected to device', icon: 'bluetooth', completed: false, active: false },
+    { id: 2, status: 'wifi_received', label: 'Sending WiFi credentials', icon: 'wifi', completed: false, active: false },
+    { id: 3, status: 'supabase_received', label: 'Configuring cloud sync', icon: 'cloud', completed: false, active: false },
+    { id: 4, status: 'user_received', label: 'Saving configuration', icon: 'save', completed: false, active: false },
+    { id: 5, status: 'provisioning_complete', label: 'Setup complete!', icon: 'checkmark-circle', completed: false, active: false },
+  ])
   
   const { theme } = useAppTheme()
   const styles = useThemedStyles(createStyles)
+
+  const updateStepStatus = (status: ProvisioningStatus, message: string) => {
+    console.log(`📊 Step update: ${status} - ${message}`)
+    setCurrentStep(message)
+    
+    setProvisioningSteps(prev => prev.map(step => {
+      if (step.status === status) {
+        return { ...step, completed: true, active: false }
+      }
+      // Find next step to activate
+      const currentIndex = prev.findIndex(s => s.status === status)
+      const nextIndex = currentIndex + 1
+      if (step.id === nextIndex + 1) {
+        return { ...step, active: true }
+      }
+      return step
+    }))
+  }
 
   const handleProvision = async () => {
     // Validate inputs
@@ -47,6 +81,11 @@ export default function WiFiSetupScreen() {
     }
 
     setProvisioning(true)
+    
+    // Activate first step
+    setProvisioningSteps(prev => prev.map(step => 
+      step.id === 1 ? { ...step, active: true } : step
+    ))
 
     try {
       // Get current user and household
@@ -85,32 +124,59 @@ export default function WiFiSetupScreen() {
         householdId: memberData.household_id,
       }
 
-      // Send credentials to device via BLE
-      setCurrentStep('Sending WiFi credentials...')
-      await bleService.provisionDevice(credentials)
+      // Send credentials to device via BLE with status callbacks
+      setCurrentStep('Starting provisioning...')
+      await bleService.provisionDevice(credentials, {
+        onStatusUpdate: (status, message) => {
+          updateStepStatus(status, message)
+          
+          // Handle provisioning complete
+          if (status === 'provisioning_complete') {
+            setTimeout(async () => {
+              try {
+                // Register device in Supabase
+                setCurrentStep('Registering device in cloud...')
+                const displayName = deviceDisplayName.trim() || deviceName
+                await deviceService.registerDevice(
+                  memberData.household_id,
+                  deviceId,
+                  displayName
+                )
 
-      // Register device in Supabase
-      setCurrentStep('Registering device...')
-      const displayName = deviceDisplayName.trim() || deviceName
-      await deviceService.registerDevice(
-        memberData.household_id,
-        deviceId,
-        displayName
-      )
-
-      setCurrentStep('Complete!')
-
-      // Navigate to success screen
-      setTimeout(() => {
-        navigation.replace('SetupComplete', { 
-          deviceId,
-          deviceName: displayName 
-        })
-      }, 500)
+                setCurrentStep('Complete!')
+                
+                // Disconnect and navigate to success screen
+                await bleService.disconnect()
+                
+                setTimeout(() => {
+                  navigation.replace('SetupComplete', { 
+                    deviceId,
+                    deviceName: displayName 
+                  })
+                }, 500)
+              } catch (regError: any) {
+                console.error('Registration error:', regError)
+                Alert.alert('Warning', 'Device provisioned but failed to register. Please try adding it again from device list.')
+                navigation.goBack()
+              }
+            }, 1000)
+          }
+        },
+        onError: (error) => {
+          console.error('❌ Provisioning callback error:', error)
+        }
+      })
 
     } catch (error: any) {
-      console.error('Provisioning error:', error)
+      console.error('❌ Provisioning error:', error)
       setProvisioning(false)
+      
+      // Reset steps
+      setProvisioningSteps(prev => prev.map(step => ({ 
+        ...step, 
+        completed: false, 
+        active: false 
+      })))
       
       Alert.alert(
         'Provisioning Failed',
@@ -133,12 +199,6 @@ export default function WiFiSetupScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header */}
-          <Text style={styles.title}>Configure Device</Text>
-          <Text style={styles.subtitle}>
-            Connect your device to WiFi and complete setup
-          </Text>
-
           {/* Device Info */}
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Device</Text>
@@ -211,13 +271,47 @@ export default function WiFiSetupScreen() {
             />
           </View>
 
-          {/* Progress Indicator */}
+          {/* Provisioning Steps */}
           {provisioning && (
             <View style={styles.card}>
-              <View style={styles.progressContainer}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
-                <Text style={styles.progressText}>{currentStep}</Text>
-              </View>
+              <Text style={styles.sectionTitle}>Provisioning Progress</Text>
+              {provisioningSteps.map((step, index) => (
+                <View key={step.id} style={styles.stepContainer}>
+                  <View style={styles.stepRow}>
+                    <View style={[
+                      styles.stepIcon,
+                      step.completed && styles.stepIconCompleted,
+                      step.active && styles.stepIconActive
+                    ]}>
+                      {step.completed ? (
+                        <Ionicons name="checkmark" size={20} color={theme.colors.success} />
+                      ) : step.active ? (
+                        <ActivityIndicator size="small" color={theme.colors.primary} />
+                      ) : (
+                        <Ionicons name={step.icon as any} size={20} color={theme.colors.muted} />
+                      )}
+                    </View>
+                    <View style={styles.stepContent}>
+                      <Text style={[
+                        styles.stepLabel,
+                        step.completed && styles.stepLabelCompleted,
+                        step.active && styles.stepLabelActive
+                      ]}>
+                        {step.label}
+                      </Text>
+                      {step.active && (
+                        <Text style={styles.stepStatus}>{currentStep}</Text>
+                      )}
+                    </View>
+                  </View>
+                  {index < provisioningSteps.length - 1 && (
+                    <View style={[
+                      styles.stepConnector,
+                      step.completed && styles.stepConnectorCompleted
+                    ]} />
+                  )}
+                </View>
+              ))}
             </View>
           )}
 
@@ -254,17 +348,9 @@ const createStyles = (theme: AppTheme) =>
     },
     scrollContent: {
       padding: 16,
+      paddingTop: 8,
       paddingBottom: 40,
       gap: 12,
-    },
-    title: {
-      fontSize: 28,
-      fontWeight: '700',
-      color: theme.colors.text,
-    },
-    subtitle: {
-      color: theme.colors.textSecondary,
-      marginBottom: 8,
     },
     card: {
       backgroundColor: theme.colors.card,
@@ -342,15 +428,62 @@ const createStyles = (theme: AppTheme) =>
       fontSize: 12,
       marginTop: 6,
     },
-    progressContainer: {
-      alignItems: 'center',
-      paddingVertical: 30,
+    stepContainer: {
+      marginBottom: 8,
     },
-    progressText: {
-      marginTop: 16,
-      fontSize: 14,
+    stepRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+    },
+    stepIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 2,
+      borderColor: theme.colors.border,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 12,
+    },
+    stepIconActive: {
+      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.overlay,
+    },
+    stepIconCompleted: {
+      borderColor: theme.colors.success,
+      backgroundColor: theme.colors.overlay,
+    },
+    stepContent: {
+      flex: 1,
+      paddingTop: 8,
+    },
+    stepLabel: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: theme.colors.muted,
+      marginBottom: 2,
+    },
+    stepLabelActive: {
+      color: theme.colors.primary,
+    },
+    stepLabelCompleted: {
+      color: theme.colors.success,
+    },
+    stepStatus: {
+      fontSize: 13,
       color: theme.colors.textSecondary,
-      textAlign: 'center',
+      marginTop: 4,
+    },
+    stepConnector: {
+      width: 2,
+      height: 16,
+      backgroundColor: theme.colors.border,
+      marginLeft: 19,
+      marginVertical: 2,
+    },
+    stepConnectorCompleted: {
+      backgroundColor: theme.colors.success,
     },
     setupButton: {
       flexDirection: 'row',

@@ -35,7 +35,7 @@ export default function SetupCompleteScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.content}>
         {/* Success Animation */}
         <Animatable.View animation="bounceIn" duration={1000} style={styles.iconContainer}>
@@ -117,7 +117,7 @@ const createStyles = (theme: AppTheme) =>
     },
     content: {
       flex: 1,
-      padding: 20,
+      padding: 16,
       justifyContent: 'center',
     },
     iconContainer: {

@@ -175,7 +175,7 @@ export default function DeviceScanScreen() {
   )
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
@@ -324,7 +324,7 @@ const createStyles = (theme: AppTheme) =>
     },
     debugButton: {
       padding: 8,
-      marginLeft: 12,
+      marginLeft: 8,
     },
     title: {
       fontSize: 28,
@@ -334,6 +334,7 @@ const createStyles = (theme: AppTheme) =>
     subtitle: {
       color: theme.colors.textSecondary,
       marginTop: 4,
+      fontSize: 14,
     },
     card: {
       backgroundColor: theme.colors.card,

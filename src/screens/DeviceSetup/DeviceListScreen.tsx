@@ -210,8 +210,8 @@ export default function DeviceListScreen() {
       >
         {/* Header */}
         <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.title}>My Devices</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>My Devices</Text> 
             <Text style={styles.subtitle}>Manage your Pet Fountain devices</Text>
           </View>
           <TouchableOpacity onPress={handleAddDevice} style={styles.addIconButton}>
@@ -262,8 +262,8 @@ const createStyles = (theme: AppTheme) =>
     headerRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 4,
+      alignItems: 'flex-start',
+      marginBottom: 8,
     },
     title: {
       fontSize: 28,
@@ -272,10 +272,12 @@ const createStyles = (theme: AppTheme) =>
     },
     subtitle: {
       color: theme.colors.textSecondary,
-      marginTop: 2,
+      marginTop: 4,
+      fontSize: 14,
     },
     addIconButton: {
       padding: 4,
+      marginLeft: 8,
     },
     card: {
       backgroundColor: theme.colors.card,

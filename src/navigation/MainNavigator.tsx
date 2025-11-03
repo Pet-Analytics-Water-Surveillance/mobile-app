@@ -101,6 +101,7 @@ function SettingsNavigator() {
         name="DeviceSetup" 
         component={DeviceScanScreen}
         options={({ navigation, route }) => ({
+          headerShown: false,
           title: 'Setup Device',
           headerLeft: () => (
             <TouchableOpacity
@@ -133,12 +134,12 @@ function SettingsNavigator() {
       <SettingsStack.Screen 
         name="SetupComplete" 
         component={SetupCompleteScreen}
-        options={{ title: 'Setup Complete' }}
+        options={{ headerShown: false }}
       />
       <SettingsStack.Screen 
         name="DeviceList" 
         component={DeviceListScreen}
-        options={{ title: 'My Devices' }}
+        options={{ headerShown: false }}
       />
     </SettingsStack.Navigator>
   )
