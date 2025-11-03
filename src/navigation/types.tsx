@@ -30,6 +30,9 @@ export type SettingsStackParamList = {
   SetupComplete: { deviceId: string }
   Profile: undefined
   HouseholdInvites: undefined
+  TermsPolicy: undefined
+  HelpSupport: undefined
+  About: undefined
 }
 
 // Root Stack

@@ -150,18 +150,18 @@ export default function SettingsScreen() {
             <SettingItem
               icon="help-circle-outline"
               title="Help & Support"
-              onPress={() => {}}
+              onPress={() => navigation.navigate('HelpSupport')}
             />
             <SettingItem
               icon="document-text-outline"
               title="Terms & Privacy"
-              onPress={() => {}}
+              onPress={() => navigation.navigate('TermsPolicy')}
             />
             <SettingItem
               icon="information-circle-outline"
               title="About"
               subtitle="Version 1.0.0"
-              onPress={() => {}}
+              onPress={() => navigation.navigate('About')}
             />
           </View>
         </View>
