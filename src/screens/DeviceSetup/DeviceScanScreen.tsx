@@ -134,11 +134,10 @@ export default function DeviceScanScreen() {
                 // Stop scanning
                 bleService.stopScan()
                 
-                // Show connecting indicator
-                Alert.alert('Connecting', 'Please wait...', [], { cancelable: false })
-                
                 // Connect to device
+                console.log('🔵 Connecting to device:', device.id)
                 await bleService.connect(device.id)
+                console.log('✅ Connected successfully, navigating to WiFi setup')
                 
                 // Navigate to WiFi setup
                 navigation.navigate('WiFiSetup', { 
@@ -146,6 +145,7 @@ export default function DeviceScanScreen() {
                   deviceName: device.name 
                 })
               } catch (error: any) {
+                console.error('❌ Connection error:', error)
                 Alert.alert('Connection Failed', error.message || 'Could not connect to device.')
               }
             },
