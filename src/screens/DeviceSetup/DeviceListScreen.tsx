@@ -58,7 +58,7 @@ export default function DeviceListScreen() {
       console.error('Error loading devices:', error)
       Alert.alert('Error', 'Failed to load devices')
     } finally {
-      setLoading(false)
+      setLoading(false) 
     }
   }
 

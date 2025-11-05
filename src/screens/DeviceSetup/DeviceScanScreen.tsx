@@ -18,6 +18,8 @@ import { bleService, ScannedDevice } from '../../services/bluetooth/BLEService'
 export default function DeviceScanScreen() {
   const navigation = useNavigation<any>()
   const [scanning, setScanning] = useState(false)
+  const [connecting, setConnecting] = useState(false)
+  const [connectingDeviceName, setConnectingDeviceName] = useState('')
   const [devices, setDevices] = useState<ScannedDevice[]>([])
   const [bluetoothEnabled, setBluetoothEnabled] = useState(false)
   const [scanProgress, setScanProgress] = useState(0)
@@ -134,10 +136,17 @@ export default function DeviceScanScreen() {
                 // Stop scanning
                 bleService.stopScan()
                 
-                // Connect to device
+                // Show connecting state
+                setConnecting(true)
+                setConnectingDeviceName(device.name)
+                
+                // Connect to device and verify firmware connection
                 console.log('🔵 Connecting to device:', device.id)
                 await bleService.connect(device.id)
                 console.log('✅ Connected successfully, navigating to WiFi setup')
+                
+                // Hide connecting state
+                setConnecting(false)
                 
                 // Navigate to WiFi setup
                 navigation.navigate('WiFiSetup', { 
@@ -146,6 +155,7 @@ export default function DeviceScanScreen() {
                 })
               } catch (error: any) {
                 console.error('❌ Connection error:', error)
+                setConnecting(false)
                 Alert.alert('Connection Failed', error.message || 'Could not connect to device.')
               }
             },
@@ -213,6 +223,19 @@ export default function DeviceScanScreen() {
           </View>
         )}
 
+        {/* Connecting State */}
+        {connecting && (
+          <View style={styles.card}>
+            <View style={styles.scanningContainer}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <Text style={styles.scanningText}>Connecting to device...</Text>
+              <Text style={styles.scanningSubtext}>
+                {connectingDeviceName} - Establishing secure connection
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Error Message */}
         {errorMessage && !scanning && (
           <View style={[styles.card, styles.errorCard]}>
@@ -222,7 +245,7 @@ export default function DeviceScanScreen() {
         )}
 
         {/* Devices List */}
-        {!scanning && devices.length > 0 && (
+        {!scanning && !connecting && devices.length > 0 && (
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Available Devices</Text>
             {devices.map((item) => (
@@ -270,7 +293,7 @@ export default function DeviceScanScreen() {
         )}
 
         {/* Empty State */}
-        {!scanning && devices.length === 0 && !errorMessage && (
+        {!scanning && !connecting && devices.length === 0 && !errorMessage && (
           <View style={styles.card}>
             <View style={styles.emptyState}>
               <Ionicons name="bluetooth-outline" size={64} color={theme.colors.muted} />
@@ -291,7 +314,7 @@ export default function DeviceScanScreen() {
         )}
 
         {/* Scan Button */}
-        {!scanning && (
+        {!scanning && !connecting && (
           <TouchableOpacity style={styles.scanButton} onPress={startScan} activeOpacity={0.8}>
             <Ionicons name="refresh" size={20} color={theme.colors.onPrimary} />
             <Text style={styles.scanButtonText}>Scan Again</Text>

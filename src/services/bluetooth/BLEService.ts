@@ -202,7 +202,7 @@ class BLEService {
    */
   async connect(deviceId: string): Promise<Device> {
     try {
-      console.log('Connecting to device:', deviceId)
+      console.log('🔵 Connecting to device:', deviceId)
 
       // Disconnect any existing connection
       if (this.connectedDevice) {
@@ -213,16 +213,41 @@ class BLEService {
         timeout: 10000,
       })
 
-      console.log('✓ Connected to device')
+      console.log('✓ GATT connection established')
 
       // Discover services and characteristics
+      console.log('🔍 Discovering services...')
       await device.discoverAllServicesAndCharacteristics()
-      console.log('✓ Services discovered')
+      console.log('✓ Services and characteristics discovered')
 
       this.connectedDevice = device
+
+      // Verify we can communicate with the device by reading status
+      try {
+        console.log('📡 Verifying connection by reading status characteristic...')
+        const statusChar = await device.readCharacteristicForService(
+          SERVICE_UUID,
+          STATUS_CHAR_UUID
+        )
+        
+        if (statusChar?.value) {
+          const status = base64Decode(statusChar.value)
+          console.log('✅ Device status:', status)
+        }
+      } catch (readError) {
+        console.warn('⚠️  Could not read status (this is OK if device just started):', readError)
+        // Don't fail connection if we can't read status - device might not be ready yet
+      }
+
+      // Wait a bit for firmware to process connection
+      console.log('⏳ Waiting for firmware to process connection...')
+      await this.delay(1000)
+
+      console.log('✅ Connection fully established!')
       return device
     } catch (error) {
-      console.error('Connection error:', error)
+      console.error('❌ Connection error:', error)
+      this.connectedDevice = null
       throw new Error('Failed to connect to device. Make sure it is in pairing mode.')
     }
   }
