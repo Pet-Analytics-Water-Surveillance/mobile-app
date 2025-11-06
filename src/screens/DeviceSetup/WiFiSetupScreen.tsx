@@ -126,46 +126,217 @@ export default function WiFiSetupScreen() {
 
       // Send credentials to device via BLE with status callbacks
       setCurrentStep('Starting provisioning...')
+      let provisioningFinished = false
+      
+      // Set a timeout fallback in case provisioning_complete never arrives
+      const timeoutId = setTimeout(async () => {
+        if (!provisioningFinished) {
+          console.warn('⚠️  Provisioning timeout - proceeding anyway')
+          provisioningFinished = true
+          try {
+            const displayName = deviceDisplayName.trim() || deviceName
+            setCurrentStep('Registering device...')
+            console.log('📡 Registering device (timeout fallback)...')
+            
+            await deviceService.registerDevice(
+              memberData.household_id,
+              deviceId,
+              displayName
+            )
+            
+            console.log('✅ Device registered (timeout fallback)')
+            
+            try {
+              await bleService.disconnect()
+            } catch (e) {
+              console.warn('BLE disconnect error (non-critical):', e)
+            }
+            
+            try {
+              navigation.replace('SetupComplete', { 
+                deviceId,
+                deviceName: displayName 
+              })
+            } catch (navError) {
+              console.error('Navigation error in timeout fallback:', navError)
+              try {
+                navigation.navigate('DeviceList')
+              } catch (fallbackError) {
+                Alert.alert('Success', 'Device may have been provisioned. Please check device list.', [
+                  { text: 'OK', onPress: () => navigation.goBack() }
+                ])
+              }
+            }
+          } catch (err: any) {
+            console.error('Timeout fallback error:', err)
+            console.error('   Error details:', JSON.stringify(err, null, 2))
+            
+            try {
+              await bleService.disconnect()
+            } catch (e) {
+              console.warn('Failed to disconnect on timeout error:', e)
+            }
+            
+            Alert.alert('Warning', 'Device may have been provisioned. Please check device list.', [
+              { 
+                text: 'OK', 
+                onPress: () => {
+                  try {
+                    navigation.goBack()
+                  } catch (navError) {
+                    console.error('Navigation error:', navError)
+                  }
+                }
+              }
+            ])
+          }
+        }
+      }, 15000) // 15 second timeout
+      
       await bleService.provisionDevice(credentials, {
         onStatusUpdate: (status, message) => {
-          updateStepStatus(status, message)
-          
-          // Handle provisioning complete
-          if (status === 'provisioning_complete') {
-            setTimeout(async () => {
-              try {
-                // Register device in Supabase
-                setCurrentStep('Registering device in cloud...')
-                const displayName = deviceDisplayName.trim() || deviceName
-                await deviceService.registerDevice(
-                  memberData.household_id,
-                  deviceId,
-                  displayName
-                )
-
-                setCurrentStep('Complete!')
-                
-                // Disconnect and navigate to success screen
-                await bleService.disconnect()
-                
-                setTimeout(() => {
-                  navigation.replace('SetupComplete', { 
-                    deviceId,
-                    deviceName: displayName 
-                  })
-                }, 500)
-              } catch (regError: any) {
-                console.error('Registration error:', regError)
-                Alert.alert('Warning', 'Device provisioned but failed to register. Please try adding it again from device list.')
-                navigation.goBack()
+          try {
+            updateStepStatus(status, message)
+            
+            // Handle provisioning complete
+            if (status === 'provisioning_complete') {
+              console.log('🎉 Provisioning complete received!')
+              clearTimeout(timeoutId)
+              
+              // Prevent multiple executions
+              if (provisioningFinished) {
+                console.log('⚠️  Provisioning complete already handled, skipping...')
+                return
               }
-            }, 1000)
+              provisioningFinished = true
+              
+              // NOTE: Don't manually unsubscribe here - causes crash in BLE library
+              // The device is restarting and will disconnect, which triggers an error
+              // in the BLE library when we try to unsubscribe at the same time.
+              // Let the subscription handle disconnection naturally.
+              console.log('ℹ️  Device restarting - letting BLE handle disconnection naturally')
+              
+              // Proceed with device registration immediately
+              // Don't try to disconnect - device is already restarting
+              setTimeout(async () => {
+                try {
+                  console.log('📝 Starting device registration...')
+                  setCurrentStep('Registering device in cloud...')
+                  const displayName = deviceDisplayName.trim() || deviceName
+                  
+                  console.log('📡 Checking if device already exists...')
+                  const existingDevice = await deviceService.isDeviceRegistered(deviceId)
+                  
+                  if (existingDevice) {
+                    console.log('ℹ️  Device already registered, skipping registration')
+                  } else {
+                    console.log('📡 Registering device:', {
+                      householdId: memberData.household_id,
+                      deviceId,
+                      displayName
+                    })
+                    
+                    await deviceService.registerDevice(
+                      memberData.household_id,
+                      deviceId,
+                      displayName
+                    )
+                  }
+
+                  console.log('✅ Device registered successfully')
+                  setCurrentStep('Complete!')
+                  
+                  // Navigate to success screen
+                  setTimeout(() => {
+                    try {
+                      console.log('🧭 Navigating to SetupComplete screen...')
+                      navigation.replace('SetupComplete', { 
+                        deviceId,
+                        deviceName: displayName 
+                      })
+                      console.log('✅ Navigation complete')
+                    } catch (navError: any) {
+                      console.error('❌ Navigation error:', navError)
+                      // Fallback navigation
+                      try {
+                        navigation.navigate('DeviceList')
+                      } catch (fallbackError) {
+                        console.error('❌ Fallback navigation also failed:', fallbackError)
+                        Alert.alert('Success', 'Device provisioned successfully!', [
+                          { text: 'OK', onPress: () => navigation.goBack() }
+                        ])
+                      }
+                    }
+                  }, 500)
+                } catch (regError: any) {
+                  console.error('❌ Registration error:', regError)
+                  console.error('   Error details:', JSON.stringify(regError, null, 2))
+                  
+                // Check if device was already registered (duplicate key error)
+                const errorMessage = regError?.message || ''
+                const errorCode = regError?.code || ''
+                if (errorMessage.includes('duplicate') || 
+                    errorMessage.includes('unique') || 
+                    errorMessage.includes('already exists') ||
+                    errorCode === '23505') {  // PostgreSQL duplicate key error code
+                  console.log('ℹ️  Device already registered - navigating to device list')
+                  
+                  // Device is already registered, just navigate to success
+                  // Don't show alert, just navigate directly
+                  try {
+                    console.log('🧭 Navigating to SetupComplete screen (device already exists)...')
+                    navigation.replace('SetupComplete', { 
+                      deviceId,
+                      deviceName: displayName 
+                    })
+                  } catch (navError) {
+                    console.error('❌ Navigation error:', navError)
+                    try {
+                      navigation.navigate('DeviceList')
+                    } catch (fallbackError) {
+                      Alert.alert('Success', 'Device already registered!', [
+                        { text: 'OK', onPress: () => navigation.goBack() }
+                      ])
+                    }
+                  }
+                } else {
+                    Alert.alert(
+                      'Warning', 
+                      'Device provisioned but failed to register. Please try adding it again from device list.',
+                      [
+                        { 
+                          text: 'OK', 
+                          onPress: () => {
+                            try {
+                              navigation.goBack()
+                            } catch (navError) {
+                              console.error('Navigation error:', navError)
+                            }
+                          }
+                        }
+                      ]
+                    )
+                  }
+                }
+              }, 500) // Reduced delay - device registration should happen quickly
+            }
+          } catch (statusError) {
+            // Catch any errors in status callback to prevent crashes
+            console.error('❌ Error in onStatusUpdate callback:', statusError)
+            // Don't throw - continue with provisioning
           }
         },
         onError: (error) => {
-          console.error('❌ Provisioning callback error:', error)
+          try {
+            clearTimeout(timeoutId)
+            console.error('❌ Provisioning callback error:', error)
+          } catch (errorHandlerError) {
+            console.error('❌ Error in error handler:', errorHandlerError)
+          }
         }
       })
+      
+      clearTimeout(timeoutId) // Clear timeout if provisionDevice completes normally
 
     } catch (error: any) {
       console.error('❌ Provisioning error:', error)
