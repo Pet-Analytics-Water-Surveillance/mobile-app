@@ -30,12 +30,8 @@ export default function SetupCompleteScreen() {
     })
   }
 
-  const handleViewDevices = () => {
-    navigation.replace('DeviceList')
-  }
-
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.content}>
         {/* Success Animation */}
         <Animatable.View animation="bounceIn" duration={1000} style={styles.iconContainer}>
@@ -117,12 +113,12 @@ const createStyles = (theme: AppTheme) =>
     },
     content: {
       flex: 1,
-      padding: 16,
-      justifyContent: 'center',
+      padding: 20,
+      justifyContent: 'space-evenly',
     },
     iconContainer: {
       alignItems: 'center',
-      marginBottom: 30,
+      marginBottom: 20,
     },
     successCircle: {
       width: 120,
@@ -136,7 +132,7 @@ const createStyles = (theme: AppTheme) =>
     },
     messageContainer: {
       alignItems: 'center',
-      marginBottom: 40,
+      marginBottom: 20,
     },
     title: {
       fontSize: 28,
@@ -153,7 +149,7 @@ const createStyles = (theme: AppTheme) =>
       paddingHorizontal: 20,
     },
     infoSection: {
-      marginBottom: 40,
+      marginBottom: 20,
     },
     infoCard: {
       flexDirection: 'row',

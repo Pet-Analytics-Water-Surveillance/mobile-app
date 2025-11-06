@@ -98,12 +98,34 @@ export default function DeviceListScreen() {
           text: 'Remove',
           style: 'destructive',
           onPress: async () => {
-            const success = await deviceService.deleteDevice(device.id)
-            if (success) {
-              Alert.alert('Success', 'Device removed successfully')
-              loadDevices()
-            } else {
-              Alert.alert('Error', 'Failed to remove device')
+            try {
+              console.log('🗑️  User confirmed deletion of device:', device.id, device.name)
+              
+              const success = await deviceService.deleteDevice(device.id)
+              
+              if (success) {
+                console.log('✅ Device deleted successfully, refreshing list...')
+                
+                // Remove from local state immediately for better UX
+                setDevices(prevDevices => prevDevices.filter(d => d.id !== device.id))
+                
+                Alert.alert('Success', `${device.name} has been removed successfully`)
+                
+                // Reload devices to ensure consistency
+                await loadDevices()
+              } else {
+                console.error('❌ Device deletion failed')
+                Alert.alert(
+                  'Deletion Failed', 
+                  'Unable to remove the device. Please check the console logs and try again.'
+                )
+              }
+            } catch (error) {
+              console.error('❌ Exception while deleting device:', error)
+              Alert.alert(
+                'Error',
+                'An unexpected error occurred while removing the device.'
+              )
             }
           },
         },

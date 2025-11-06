@@ -202,17 +202,54 @@ class DeviceService {
    */
   async deleteDevice(deviceId: string): Promise<boolean> {
     try {
-      const { error } = await supabase.from('devices').delete().eq('id', deviceId)
+      console.log('🗑️  Attempting to delete device:', deviceId)
+      
+      // First, verify the device exists
+      const { data: existingDevice, error: fetchError } = await supabase
+        .from('devices')
+        .select('id, name')
+        .eq('id', deviceId)
+        .single()
 
-      if (error) {
-        console.error('Error deleting device:', error)
+      if (fetchError || !existingDevice) {
+        console.error('Device not found or error fetching:', fetchError)
         return false
       }
 
-      console.log('✓ Device deleted')
+      console.log('Found device to delete:', existingDevice.name)
+
+      // Perform the delete
+      const { error, count } = await supabase
+        .from('devices')
+        .delete({ count: 'exact' })
+        .eq('id', deviceId)
+
+      if (error) {
+        console.error('❌ Error deleting device:', error)
+        console.error('Error code:', error.code)
+        console.error('Error message:', error.message)
+        console.error('Error details:', error.details)
+        return false
+      }
+
+      console.log('✅ Device deleted successfully. Rows affected:', count)
+      
+      // Verify deletion
+      const { data: verifyDevice } = await supabase
+        .from('devices')
+        .select('id')
+        .eq('id', deviceId)
+        .maybeSingle()
+
+      if (verifyDevice) {
+        console.error('⚠️  Device still exists after delete attempt!')
+        return false
+      }
+
+      console.log('✓ Deletion verified - device no longer exists')
       return true
     } catch (error) {
-      console.error('deleteDevice error:', error)
+      console.error('❌ deleteDevice exception:', error)
       return false
     }
   }
