@@ -11,12 +11,13 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useRoute } from '@react-navigation/native'
 import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
 import { bleService, ScannedDevice } from '../../services/bluetooth/BLEService'
 
 export default function DeviceScanScreen() {
   const navigation = useNavigation<any>()
+  const route = useRoute<any>()
   const [scanning, setScanning] = useState(false)
   const [connecting, setConnecting] = useState(false)
   const [connectingDeviceName, setConnectingDeviceName] = useState('')
@@ -184,11 +185,38 @@ export default function DeviceScanScreen() {
     </TouchableOpacity>
   )
 
+  const handleBackPress = () => {
+    const fromHome = route.params?.fromHome
+    const fromDeviceList = route.params?.fromDeviceList
+    
+    if (fromHome) {
+      // If opened from Home, reset Settings stack to root then switch to Home tab
+      navigation.reset({ index: 0, routes: [{ name: 'SettingsList' }] })
+      const parent = navigation.getParent() as any
+      parent?.navigate('Home')
+    } else if (fromDeviceList) {
+      // If opened from DeviceList, go back to DeviceList
+      navigation.navigate('DeviceList')
+    } else if (navigation.canGoBack()) {
+      // Default: go back
+      navigation.goBack()
+    } else {
+      // Fallback: go to Settings root
+      navigation.navigate('SettingsList')
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
+        {/* Header with Back Button */}
+        <View style={styles.headerRow}>
+          <TouchableOpacity 
+            onPress={handleBackPress}
+            style={styles.backButton}
+          >
+            <Ionicons name="chevron-back" size={28} color={theme.colors.primary} />
+          </TouchableOpacity>
           <View style={styles.headerText}>
             <Text style={styles.title}>Find Your Device</Text>
             <Text style={styles.subtitle}>
@@ -336,18 +364,21 @@ const createStyles = (theme: AppTheme) =>
       paddingBottom: 40,
       gap: 12,
     },
-    header: {
+    headerRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'flex-start',
       marginBottom: 4,
+      gap: 8,
+    },
+    backButton: {
+      padding: 4,
+      marginTop: 2,
     },
     headerText: {
       flex: 1,
     },
     debugButton: {
       padding: 8,
-      marginLeft: 8,
     },
     title: {
       fontSize: 28,

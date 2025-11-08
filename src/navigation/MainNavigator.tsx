@@ -100,31 +100,10 @@ function SettingsNavigator() {
       <SettingsStack.Screen 
         name="DeviceSetup" 
         component={DeviceScanScreen}
-        options={({ navigation, route }) => ({
+        options={{ 
           headerShown: false,
           title: 'Setup Device',
-          headerLeft: () => (
-            <TouchableOpacity
-              style={{ paddingHorizontal: 10 }}
-              onPress={() => {
-                const fromHome = (route.params as any)?.fromHome
-                if (fromHome) {
-                  // If opened from Home, reset Settings stack to root
-                  // then switch back to Home tab
-                  navigation.reset({ index: 0, routes: [{ name: 'SettingsList' }] })
-                  const parent = navigation.getParent() as any
-                  parent?.navigate('Home')
-                } else if (navigation.canGoBack()) {
-                  navigation.goBack()
-                } else {
-                  navigation.navigate('SettingsList')
-                }
-              }}
-            >
-              <Ionicons name="chevron-back" size={24} color={theme.colors.primary} />
-            </TouchableOpacity>
-          ),
-        })}
+        }}
       />
       <SettingsStack.Screen 
         name="WiFiSetup" 

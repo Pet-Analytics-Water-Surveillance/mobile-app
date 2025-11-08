@@ -69,7 +69,7 @@ export default function DeviceListScreen() {
   }
 
   const handleAddDevice = () => {
-    navigation.navigate('DeviceSetup')
+    navigation.navigate('DeviceSetup', { fromDeviceList: true })
   }
 
   const handleDevicePress = (device: DeviceWithStatus) => {
@@ -216,6 +216,14 @@ export default function DeviceListScreen() {
     )
   }
 
+  const handleBackPress = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack()
+    } else {
+      navigation.navigate('SettingsList')
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
@@ -230,15 +238,20 @@ export default function DeviceListScreen() {
           />
         }
       >
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title}>My Devices</Text> 
-            <Text style={styles.subtitle}>Manage your Pet Fountain devices</Text>
-          </View>
-          <TouchableOpacity onPress={handleAddDevice} style={styles.addIconButton}>
-            <Ionicons name="add-circle" size={32} color={theme.colors.primary} />
+        {/* Header with Back Button */}
+        <View style={styles.headerContainer}>
+          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={28} color={theme.colors.primary} />
           </TouchableOpacity>
+          <View style={styles.headerRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title}>My Devices</Text> 
+              <Text style={styles.subtitle}>Manage your Pet Fountain devices</Text>
+            </View>
+            <TouchableOpacity onPress={handleAddDevice} style={styles.addIconButton}>
+              <Ionicons name="add-circle" size={32} color={theme.colors.primary} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Devices List */}
@@ -281,11 +294,18 @@ const createStyles = (theme: AppTheme) =>
       paddingBottom: 40,
       gap: 12,
     },
+    headerContainer: {
+      marginBottom: 8,
+    },
+    backButton: {
+      padding: 4,
+      marginBottom: 8,
+      alignSelf: 'flex-start',
+    },
     headerRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
-      marginBottom: 8,
     },
     title: {
       fontSize: 28,
