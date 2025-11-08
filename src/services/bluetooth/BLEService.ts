@@ -588,13 +588,15 @@ class BLEService {
         return
       }
       
-      console.log('\n📡 Step 3: Sending user ID...')
+      console.log('\n📡 Step 3: Sending user ID and household ID...')
       console.log(`   User ID: ${credentials.userId}`)
+      console.log(`   Household ID: ${credentials.householdId}`)
       try {
         await this.writeCharacteristic(USER_CHAR_UUID, {
           user_id: credentials.userId,
+          household_id: credentials.householdId,
         })
-        console.log('✅ User ID sent successfully - Device will save and restart')
+        console.log('✅ User ID and Household ID sent successfully - Device will save and restart')
       } catch (userError: any) {
         if (this.provisioningComplete) {
           console.log('ℹ️  User ID write error ignored - provisioning already complete')
