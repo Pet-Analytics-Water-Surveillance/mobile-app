@@ -125,12 +125,13 @@ class BLEService {
       console.log('🔍 Starting BLE scan...')
       console.log(`⏱️  Scan duration: ${durationMs}ms (${durationMs / 1000}s)`)
       console.log(`🎯 Looking for devices with prefix: "${DEVICE_NAME_PREFIX}"`)
+      console.log(`📡 Filtering by service UUID: ${SERVICE_UUID}`)
       
       const foundDevices = new Map<string, ScannedDevice>()
       let scanCount = 0
 
       this.scanSubscription = this.manager.startDeviceScan(
-        null, // Scan for all devices
+        [SERVICE_UUID], // Scan for devices advertising our service UUID (required for iOS)
         { allowDuplicates: false },
         (error, device) => {
           if (error) {
