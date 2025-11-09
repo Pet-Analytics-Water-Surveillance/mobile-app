@@ -118,8 +118,7 @@ class BLEService {
    */
   async scanForDevices(
     onDeviceFound: (device: ScannedDevice) => void,
-    durationMs: number = 10000,
-    onAllDevices?: (device: ScannedDevice) => void
+    durationMs: number = 10000
   ): Promise<void> {
     try {
       console.log('🔍 Starting BLE scan...')
@@ -140,31 +139,19 @@ class BLEService {
           }
 
           if (device) {
-            scanCount++
-            
-            const scannedDevice: ScannedDevice = {
-              id: device.id,
-              name: device.name || 'Unknown Device',
-              rssi: device.rssi || -100,
-            }
-            
-            // Log all devices for debugging (even non-matching ones)
-            if (scanCount <= 10) { // Only log first 10 to avoid spam
-              console.log(`📱 Discovered device ${scanCount}: "${device.name || 'No name'}" (ID: ${device.id})`)
-            }
-            
-            // Report all devices for debug mode
-            if (onAllDevices) {
-              onAllDevices(scannedDevice)
-            }
-            
             // Check if it's a PetFountain device
             if (device.name?.includes(DEVICE_NAME_PREFIX)) {
+              const scannedDevice: ScannedDevice = {
+                id: device.id,
+                name: device.name || 'Unknown Device',
+                rssi: device.rssi || -100,
+              }
+              
               // Only report new matching devices
               if (!foundDevices.has(device.id)) {
                 foundDevices.set(device.id, scannedDevice)
                 onDeviceFound(scannedDevice)
-                console.log('✅ Found matching PetFountain device:', scannedDevice)
+                console.log('✅ Found PetFountain device:', scannedDevice.name)
               }
             }
           }
@@ -174,13 +161,7 @@ class BLEService {
       // Auto-stop scan after duration
       setTimeout(() => {
         this.stopScan()
-        console.log(`⏹️  Scan stopped after ${durationMs}ms`)
-        console.log(`📊 Total devices scanned: ${scanCount}`)
-        console.log(`🎯 Matching PetFountain devices found: ${foundDevices.size}`)
-        if (foundDevices.size === 0 && scanCount > 0) {
-          console.log(`ℹ️  No devices with name containing "${DEVICE_NAME_PREFIX}" were found`)
-          console.log(`💡 Make sure your device is powered on and advertising with the correct name`)
-        }
+        console.log(`⏹️  Scan completed - found ${foundDevices.size} device(s)`)
       }, durationMs)
     } catch (error) {
       console.error('❌ Error starting scan:', error)
