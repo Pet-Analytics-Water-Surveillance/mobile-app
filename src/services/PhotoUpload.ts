@@ -6,6 +6,7 @@ import uuid from 'react-native-uuid'
 export interface UploadResult {
   fullUrl: string
   thumbnailUrl: string
+  mlUrl?: string
 }
 
 export class PhotoUploadService {
@@ -73,12 +74,13 @@ export class PhotoUploadService {
 
         // Save to database only if requested and pet exists
         if (saveToDatabase && !petId.startsWith('temp_')) {
-          await this.savePhotoRecord(petId, fullUpload, thumbUpload, features)
+          await this.savePhotoRecord(petId, fullUpload, thumbUpload, mlUpload, features)
         }
 
         return {
           fullUrl: fullUpload,
           thumbnailUrl: thumbUpload,
+          mlUrl: mlUpload,
         }
       }
 
@@ -190,6 +192,7 @@ export class PhotoUploadService {
     petId: string,
     fullUrl: string,
     thumbnailUrl: string,
+    mlUrl: string,
     features: any
   ): Promise<void> {
     // Update main pet record
@@ -198,6 +201,7 @@ export class PhotoUploadService {
       .update({
         photo_url: fullUrl,
         thumbnail_url: thumbnailUrl,
+        ml_image_url: mlUrl,
         recognition_features: features,
       })
       .eq('id', petId)
@@ -212,5 +216,78 @@ export class PhotoUploadService {
         features: features,
         is_primary: true,
       })
+  }
+
+  /**
+   * Upload multiple training photos for AI recognition
+   * Takes 3 photos and saves them to pet_photos table
+   */
+  static async uploadTrainingPhotos(
+    petId: string,
+    numPhotos: number = 3
+  ): Promise<boolean> {
+    try {
+      console.log(`Starting training photo upload for pet ${petId}`)
+      
+      const uploadedPhotos: UploadResult[] = []
+
+      for (let i = 0; i < numPhotos; i++) {
+        // Take photo
+        const imageUri = await this.pickImage(true) // Force camera
+        
+        if (!imageUri) {
+          console.log(`User cancelled photo ${i + 1}`)
+          if (i === 0) return false // If user cancels first photo, abort
+          break // If user cancels later photos, continue with what we have
+        }
+
+        // Process and upload
+        const result = await this.processAndUploadImage(imageUri, petId, false)
+        
+        if (result) {
+          uploadedPhotos.push(result)
+        }
+      }
+
+      if (uploadedPhotos.length === 0) {
+        return false
+      }
+
+      // Save all training photos to pet_photos table
+      const photoRecords = uploadedPhotos.map((photo, index) => ({
+        pet_id: petId,
+        photo_url: photo.fullUrl,
+        thumbnail_url: photo.thumbnailUrl,
+        is_primary: index === 0, // First photo is primary
+        features: null,
+      }))
+
+      const { error } = await supabase
+        .from('pet_photos')
+        .insert(photoRecords)
+
+      if (error) {
+        console.error('Error saving training photos:', error)
+        return false
+      }
+
+      // Update pet's main photo to the first training photo
+      if (uploadedPhotos[0]) {
+        await supabase
+          .from('pets')
+          .update({
+            photo_url: uploadedPhotos[0].fullUrl,
+            thumbnail_url: uploadedPhotos[0].thumbnailUrl,
+            ml_image_url: uploadedPhotos[0].mlUrl,
+          })
+          .eq('id', petId)
+      }
+
+      console.log(`Successfully uploaded ${uploadedPhotos.length} training photos`)
+      return true
+    } catch (error) {
+      console.error('Training photos upload error:', error)
+      return false
+    }
   }
 }
