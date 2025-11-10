@@ -18,6 +18,9 @@ import DeviceListScreen from '../screens/DeviceSetup/DeviceListScreen'
 import { MainTabParamList, SettingsStackParamList } from './types'
 import AccountProfile from '../screens/Settings/AccountProfile'
 import HouseholdInvites from '../screens/Settings/HouseholdInvites'
+import AboutScreen from '../screens/Settings/AboutScreen'
+import HelpSupportScreen from '../screens/Settings/HelpSupportScreen'
+import TermsPolicyScreen from '../screens/Settings/TermsPolicyScreen'
 import { useAppTheme } from '../theme'
 
 
@@ -59,6 +62,21 @@ function SettingsNavigator() {
         name="HouseholdInvites"
         component={HouseholdInvites}
         options={{ title: 'Household Invites' }}
+      />
+      <SettingsStack.Screen 
+        name="TermsPolicy"
+        component={TermsPolicyScreen}
+        options={{ title: 'Terms & Privacy' }}
+      />
+      <SettingsStack.Screen
+        name="HelpSupport"
+        component={HelpSupportScreen}
+        options={{ title: 'Help & Support' }}
+      />
+      <SettingsStack.Screen 
+        name="About"
+        component={AboutScreen}
+        options={{ title: 'About Team P.A.W.S' }}
       />
       <SettingsStack.Screen 
         name="PetManagement" 
