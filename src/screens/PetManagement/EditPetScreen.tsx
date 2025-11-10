@@ -208,7 +208,7 @@ export default function EditPetScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="never">
         {/* Photo Section */}
         <View style={styles.photoSection}>

@@ -43,9 +43,9 @@ export default function WelcomeScreen({ navigation }: Props) {
     () => (
       theme.mode === 'dark'
         ? ([theme.colors.primary, theme.colors.primary] as const)
-        : ([theme.colors.surface, theme.colors.card] as const)
+        : (['#ffffff', '#f8f9fcff', '#f5fafeff'] as const)
     ),
-    [theme.colors.card, theme.colors.primary, theme.colors.surface, theme.mode]
+    [theme.colors.primary, theme.mode]
   )
 
   const features = [
@@ -167,17 +167,22 @@ const createStyles = (theme: AppTheme) =>
     },
     getStartedButton: {
       marginTop: 20,
-      borderRadius: 25,
+      borderRadius: 999,
       overflow: 'hidden',
+      borderWidth: theme.mode === 'dark' ? 0 : 1,
+      borderColor: theme.mode === 'dark' ? 'transparent' : 'rgba(15, 23, 42, 0.08)',
+      backgroundColor: theme.mode === 'dark' ? 'transparent' : '#ffffff',
     },
     buttonGradient: {
       paddingVertical: 15,
+      paddingHorizontal: 24,
       alignItems: 'center',
       justifyContent: 'center',
+      borderRadius: 999,
       shadowColor: theme.mode === 'dark' ? 'transparent' : '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: theme.mode === 'dark' ? 0 : 0.2,
-      shadowRadius: 3,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: theme.mode === 'dark' ? 0 : 0.08,
+      shadowRadius: 8,
       elevation: theme.mode === 'dark' ? 0 : 5,
     },
     buttonText: {
