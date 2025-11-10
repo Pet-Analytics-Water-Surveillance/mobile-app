@@ -24,6 +24,7 @@ export type SettingsStackParamList = {
   PetManagement: undefined
   PetAdd: { fromHome?: boolean } | undefined
   PetEdit: { petId: string }
+  TrainAI: { petId: string; petName: string }
   DeviceSetup: { fromHome?: boolean; fromDeviceList?: boolean } | undefined
   DeviceScan: undefined
   DeviceList: undefined

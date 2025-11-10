@@ -220,11 +220,15 @@ export class PhotoUploadService {
 
   /**
    * Upload multiple training photos for AI recognition
-   * Takes 3 photos and saves them to pet_photos table
+   * User can choose camera or gallery for each photo
+   * @param petId - Pet ID to associate photos with
+   * @param numPhotos - Number of photos to capture (default 3)
+   * @param onPhotoSelect - Callback to show camera/gallery picker
    */
   static async uploadTrainingPhotos(
     petId: string,
-    numPhotos: number = 3
+    numPhotos: number = 3,
+    onPhotoSelect?: (photoNumber: number) => Promise<'camera' | 'gallery' | 'cancel'>
   ): Promise<boolean> {
     try {
       console.log(`Starting training photo upload for pet ${petId}`)
@@ -232,8 +236,23 @@ export class PhotoUploadService {
       const uploadedPhotos: UploadResult[] = []
 
       for (let i = 0; i < numPhotos; i++) {
-        // Take photo
-        const imageUri = await this.pickImage(true) // Force camera
+        let imageUri: string | null = null
+        
+        // If callback provided, ask user to choose camera or gallery
+        if (onPhotoSelect) {
+          const choice = await onPhotoSelect(i + 1)
+          
+          if (choice === 'cancel') {
+            console.log(`User cancelled photo ${i + 1}`)
+            if (i === 0) return false // If user cancels first photo, abort
+            break // If user cancels later photos, continue with what we have
+          }
+          
+          imageUri = await this.pickImage(choice === 'camera')
+        } else {
+          // Default: use camera
+          imageUri = await this.pickImage(true)
+        }
         
         if (!imageUri) {
           console.log(`User cancelled photo ${i + 1}`)

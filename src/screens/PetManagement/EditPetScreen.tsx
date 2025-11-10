@@ -13,9 +13,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation, useRoute } from '@react-navigation/native'
+import type { StackNavigationProp } from '@react-navigation/stack'
 import { PhotoUploadService } from '../../services/PhotoUpload'
 import { supabase } from '../../services/supabase'
 import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
+import type { SettingsStackParamList } from '../../navigation/types'
 
 // Define Pet type
 interface Pet {
@@ -32,7 +34,7 @@ interface Pet {
 }
 
 export default function EditPetScreen() {
-  const navigation = useNavigation()
+  const navigation = useNavigation<StackNavigationProp<SettingsStackParamList>>()
   const route = useRoute()
   const { petId } = route.params as { petId: string }
   
@@ -138,41 +140,12 @@ export default function EditPetScreen() {
     }
   }
 
-  const handleTakeMultiplePhotos = async () => {
-    Alert.alert(
-      'Train AI Recognition',
-      'Take 3 photos of your pet from different angles for better AI recognition.\n\nTips:\n• Front, side, and back views\n• Good lighting\n• Clear, focused shots',
-      [
-        { 
-          text: 'Cancel', 
-          style: 'cancel' 
-        },
-        { 
-          text: 'Start Training',
-          onPress: async () => {
-            setLoading(true)
-            try {
-              const success = await PhotoUploadService.uploadTrainingPhotos(petId, 3)
-              
-              if (success) {
-                Alert.alert(
-                  'Success!',
-                  'Training photos uploaded successfully. Your pet can now be recognized by the device!',
-                  [{ text: 'OK', onPress: () => loadPetData() }]
-                )
-              } else {
-                Alert.alert('Cancelled', 'Training photos upload was cancelled')
-              }
-            } catch (error) {
-              console.error('Training error:', error)
-              Alert.alert('Error', 'Failed to upload training photos')
-            } finally {
-              setLoading(false)
-            }
-          }
-        }
-      ]
-    )
+  const handleTakeMultiplePhotos = () => {
+    // Navigate to dedicated Train AI screen
+    navigation.navigate('TrainAI', { 
+      petId: petId, 
+      petName: petData.name 
+    })
   }
 
   const updatePet = async () => {

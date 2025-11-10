@@ -74,8 +74,8 @@ export default function AddPetScreen() {
 
   const handleTakeMultiplePhotos = () => {
     Alert.alert(
-      'Training Photos',
-      'Take multiple photos from different angles for better recognition. This feature will be available soon!',
+      'Train AI Recognition',
+      'Training photos can be added after creating your pet.\n\n1. Save your pet first\n2. Open the pet details\n3. Tap "Train AI" to add 3 training photos\n\nThis helps the device recognize your pet from different angles!',
       [
         { text: 'OK', style: 'default' }
       ]

@@ -10,6 +10,7 @@ import SettingsScreen from '../screens/Main/SettingsScreen'
 import PetManagementScreen from '../screens/PetManagement/PetListScreen'
 import AddPetScreen from '../screens/PetManagement/AddPetScreen'
 import EditPetScreen from '../screens/PetManagement/EditPetScreen'
+import TrainAIScreen from '../screens/PetManagement/TrainAIScreen'
 import DeviceScanScreen from '../screens/DeviceSetup/DeviceScanScreen'
 import WiFiSetupScreen from '../screens/DeviceSetup/WiFiSetupScreen'
 import SetupCompleteScreen from '../screens/DeviceSetup/SetupCompleteScreen'
@@ -96,6 +97,11 @@ function SettingsNavigator() {
         name="PetEdit" 
         component={EditPetScreen}
         options={{ title: 'Edit Pet' }}
+      />
+      <SettingsStack.Screen 
+        name="TrainAI" 
+        component={TrainAIScreen}
+        options={{ headerShown: false }}
       />
       <SettingsStack.Screen 
         name="DeviceSetup" 
