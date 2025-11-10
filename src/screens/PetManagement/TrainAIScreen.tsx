@@ -217,15 +217,25 @@ export default function TrainAIScreen() {
   )
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.headerLeft}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="chevron-back" size={22} color={theme.colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Train AI for {petName}</Text>
-          <View style={{ width: 40 }} />
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            Train AI for {petName}
+          </Text>
+          <View style={styles.headerRight} />
         </View>
 
         {/* Instructions */}
@@ -285,29 +295,41 @@ const createStyles = (theme: AppTheme) =>
     scrollView: {
       flex: 1,
     },
+    contentContainer: {
+      paddingHorizontal: 20,
+      paddingTop: 1,
+      paddingBottom: 32,
+    },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 20,
-      paddingVertical: 16,
+      paddingHorizontal: 0,
+      paddingVertical: 12,
     },
-    backButton: {
-      width: 40,
-      height: 40,
-      justifyContent: 'center',
+    headerLeft: {
+      minWidth: 90,
+      flexDirection: 'row',
       alignItems: 'center',
+      gap: 4,
+    },
+    headerLeftText: {
+      fontSize: 16,
+      color: theme.colors.text,
     },
     headerTitle: {
       fontSize: 18,
       fontWeight: '600',
       color: theme.colors.text,
-      flex: 1,
       textAlign: 'center',
+      flex: 1,
+    },
+    headerRight: {
+      minWidth: 90,
     },
     instructionsCard: {
       backgroundColor: theme.colors.surface,
-      marginHorizontal: 20,
+      width: '100%',
       marginBottom: 24,
       padding: 16,
       borderRadius: 12,
@@ -331,7 +353,7 @@ const createStyles = (theme: AppTheme) =>
       lineHeight: 22,
     },
     photoSlot: {
-      marginHorizontal: 20,
+      width: '100%',
       marginBottom: 20,
     },
     photoSlotHeader: {
@@ -408,7 +430,7 @@ const createStyles = (theme: AppTheme) =>
     uploadButton: {
       flexDirection: 'row',
       backgroundColor: theme.colors.primary,
-      marginHorizontal: 20,
+      width: '100%',
       marginTop: 12,
       paddingVertical: 16,
       borderRadius: 12,
@@ -425,4 +447,3 @@ const createStyles = (theme: AppTheme) =>
       color: '#fff',
     },
   })
-
