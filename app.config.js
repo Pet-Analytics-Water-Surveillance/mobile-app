@@ -12,6 +12,7 @@ export default {
       // Use environment variables for credentials (required for production)
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-    }
+    },
+    "plugins": ["react-native-ble-plx"]
   }
 };

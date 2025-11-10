@@ -6,17 +6,20 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Alert,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../services/supabase'
 import type { Database } from '../../services/supabase'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, CommonActions } from '@react-navigation/native'
 import type { HomeScreenNavigationProp } from '../../navigation/types'
 import PetHydrationCard from '../../components/specific/PetHydrationCard'
 import QuickStats from '../../components/specific/QuickStats'
 import RecentActivity from '../../components/specific/RecentActivity'
 import { AppTheme, useAppTheme, useThemedStyles, useRefreshControlColors } from '../../theme'
+import { hydrationService, HydrationEventWithPet } from '../../services/HydrationService'
+import * as Notifications from 'expo-notifications'
 
 type Pet = Database['public']['Tables']['pets']['Row']
 type Household = Database['public']['Tables']['households']['Row']
@@ -97,11 +100,57 @@ export default function HomeScreen() {
         activeDevices,
         alerts: alerts?.length || 0,
       })
+
+      // Set up real-time hydration event subscription
+      setupRealtimeSubscription(memberData.household_id)
     }
   }, [])
 
+  const setupRealtimeSubscription = (householdId: string) => {
+    // Subscribe to new hydration events
+    const unsubscribe = hydrationService.subscribeToHydrationEvents(
+      householdId,
+      (event: HydrationEventWithPet) => {
+        console.log('New hydration event received:', event)
+        
+        // Update today's stats
+        setTodayStats((prev) => ({
+          ...prev,
+          totalWater: prev.totalWater + event.amount_ml,
+        }))
+
+        // Show in-app alert
+        Alert.alert(
+          '💧 Pet Drank Water',
+          `${event.petName} just drank ${event.amount_ml}ml of water!`,
+          [{ text: 'OK' }]
+        )
+
+        // Refresh dashboard data
+        loadDashboardData()
+      }
+    )
+
+    // Store unsubscribe function
+    return unsubscribe
+  }
+
   useEffect(() => {
+    // Request notification permissions
+    const requestNotificationPermissions = async () => {
+      const { status } = await Notifications.requestPermissionsAsync()
+      if (status !== 'granted') {
+        console.warn('Notification permissions not granted')
+      }
+    }
+    requestNotificationPermissions()
+
     loadDashboardData()
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      hydrationService.unsubscribeAll()
+    }
   }, [loadDashboardData])
 
   const onRefresh = async () => {
@@ -186,7 +235,16 @@ export default function HomeScreen() {
 
         {/* Quick Actions */}
         <View style={styles.quickActions}>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => {
+              // Navigate to Settings tab and DeviceSetup screen with fromHome flag
+              navigation.navigate('Settings', {
+                screen: 'DeviceSetup',
+                params: { fromHome: true },
+              })
+            }}
+          >
             <Ionicons name="add-outline" size={24} color={theme.colors.onPrimary} />
             <Text style={styles.actionButtonText}>Add Device</Text>
           </TouchableOpacity>

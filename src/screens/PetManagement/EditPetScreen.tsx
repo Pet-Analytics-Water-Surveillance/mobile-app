@@ -13,9 +13,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation, useRoute } from '@react-navigation/native'
+import type { StackNavigationProp } from '@react-navigation/stack'
 import { PhotoUploadService } from '../../services/PhotoUpload'
 import { supabase } from '../../services/supabase'
 import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
+import type { SettingsStackParamList } from '../../navigation/types'
 
 // Define Pet type
 interface Pet {
@@ -32,7 +34,7 @@ interface Pet {
 }
 
 export default function EditPetScreen() {
-  const navigation = useNavigation()
+  const navigation = useNavigation<StackNavigationProp<SettingsStackParamList>>()
   const route = useRoute()
   const { petId } = route.params as { petId: string }
   
@@ -139,13 +141,11 @@ export default function EditPetScreen() {
   }
 
   const handleTakeMultiplePhotos = () => {
-    Alert.alert(
-      'Training Photos',
-      'Take multiple photos from different angles for better recognition. This feature will be available soon!',
-      [
-        { text: 'OK', style: 'default' }
-      ]
-    )
+    // Navigate to dedicated Train AI screen
+    navigation.navigate('TrainAI', { 
+      petId: petId, 
+      petName: petData.name 
+    })
   }
 
   const updatePet = async () => {

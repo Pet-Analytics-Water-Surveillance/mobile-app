@@ -98,7 +98,13 @@ export default function SettingsScreen() {
             />
             <SettingItem
               icon="hardware-chip-outline"
-              title="Devices"
+              title="My Devices"
+              subtitle="View and manage devices"
+              onPress={() => navigation.navigate('DeviceList')}
+            />
+            <SettingItem
+              icon="add-circle-outline"
+              title="Add Device"
               subtitle="Set up new device"
               onPress={() => navigation.navigate('DeviceSetup')}
             />

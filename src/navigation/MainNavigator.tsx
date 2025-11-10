@@ -10,9 +10,11 @@ import SettingsScreen from '../screens/Main/SettingsScreen'
 import PetManagementScreen from '../screens/PetManagement/PetListScreen'
 import AddPetScreen from '../screens/PetManagement/AddPetScreen'
 import EditPetScreen from '../screens/PetManagement/EditPetScreen'
+import TrainAIScreen from '../screens/PetManagement/TrainAIScreen'
 import DeviceScanScreen from '../screens/DeviceSetup/DeviceScanScreen'
 import WiFiSetupScreen from '../screens/DeviceSetup/WiFiSetupScreen'
 import SetupCompleteScreen from '../screens/DeviceSetup/SetupCompleteScreen'
+import DeviceListScreen from '../screens/DeviceSetup/DeviceListScreen'
 import { MainTabParamList, SettingsStackParamList } from './types'
 import AccountProfile from '../screens/Settings/AccountProfile'
 import HouseholdInvites from '../screens/Settings/HouseholdInvites'
@@ -97,9 +99,17 @@ function SettingsNavigator() {
         options={{ title: 'Edit Pet' }}
       />
       <SettingsStack.Screen 
+        name="TrainAI" 
+        component={TrainAIScreen}
+        options={{ headerShown: false }}
+      />
+      <SettingsStack.Screen 
         name="DeviceSetup" 
         component={DeviceScanScreen}
-        options={{ title: 'Setup Device' }}
+        options={{ 
+          headerShown: false,
+          title: 'Setup Device',
+        }}
       />
       <SettingsStack.Screen 
         name="WiFiSetup" 
@@ -109,7 +119,12 @@ function SettingsNavigator() {
       <SettingsStack.Screen 
         name="SetupComplete" 
         component={SetupCompleteScreen}
-        options={{ title: 'Setup Complete' }}
+        options={{ headerShown: false }}
+      />
+      <SettingsStack.Screen 
+        name="DeviceList" 
+        component={DeviceListScreen}
+        options={{ headerShown: false }}
       />
     </SettingsStack.Navigator>
   )

@@ -24,10 +24,12 @@ export type SettingsStackParamList = {
   PetManagement: undefined
   PetAdd: { fromHome?: boolean } | undefined
   PetEdit: { petId: string }
-  DeviceSetup: undefined
+  TrainAI: { petId: string; petName: string }
+  DeviceSetup: { fromHome?: boolean; fromDeviceList?: boolean } | undefined
   DeviceScan: undefined
-  WiFiSetup: { deviceId: string }
-  SetupComplete: { deviceId: string }
+  DeviceList: undefined
+  WiFiSetup: { deviceId: string; deviceName?: string }
+  SetupComplete: { deviceId: string; deviceName?: string }
   Profile: undefined
   HouseholdInvites: undefined
 }
