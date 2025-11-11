@@ -45,7 +45,12 @@ export default function SettingsScreen() {
     showArrow = true,
     rightComponent,
   }: any) => (
-    <TouchableOpacity style={styles.settingItem} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity 
+      style={styles.settingItem} 
+      onPress={onPress} 
+      activeOpacity={0.8}
+      disabled={!onPress || !!rightComponent}
+    >
       <View style={styles.settingIcon}>
         <Ionicons name={icon} size={24} color={theme.colors.primary} />
       </View>
