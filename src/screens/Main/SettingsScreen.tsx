@@ -81,7 +81,7 @@ export default function SettingsScreen() {
               icon="lock-closed-outline"
               title="Security"
               subtitle="Password and authentication"
-              onPress={() => {}}
+              onPress={() => navigation.navigate('Security')}
             />
           </View>
         </View>
