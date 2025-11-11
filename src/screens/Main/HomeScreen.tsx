@@ -19,7 +19,6 @@ import QuickStats from '../../components/specific/QuickStats'
 import RecentActivity from '../../components/specific/RecentActivity'
 import { AppTheme, useAppTheme, useThemedStyles, useRefreshControlColors } from '../../theme'
 import { hydrationService, HydrationEventWithPet } from '../../services/HydrationService'
-import * as Notifications from 'expo-notifications'
 
 type Pet = Database['public']['Tables']['pets']['Row']
 type Household = Database['public']['Tables']['households']['Row']
@@ -136,15 +135,6 @@ export default function HomeScreen() {
   }
 
   useEffect(() => {
-    // Request notification permissions
-    const requestNotificationPermissions = async () => {
-      const { status } = await Notifications.requestPermissionsAsync()
-      if (status !== 'granted') {
-        console.warn('Notification permissions not granted')
-      }
-    }
-    requestNotificationPermissions()
-
     loadDashboardData()
 
     // Cleanup subscriptions on unmount

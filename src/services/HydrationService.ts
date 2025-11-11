@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import type { Database } from './supabase'
-import * as Notifications from 'expo-notifications'
+import { notificationService } from './NotificationService'
 
 type HydrationEvent = Database['public']['Tables']['hydration_events']['Row']
 type Pet = Database['public']['Tables']['pets']['Row']
@@ -306,15 +306,23 @@ class HydrationService {
    */
   private async showHydrationNotification(event: HydrationEventWithPet): Promise<void> {
     try {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: '💧 Pet Drank Water',
-          body: `${event.petName} drank ${event.amount_ml}ml of water`,
-          data: { eventId: event.id, petId: event.pet_id },
-          sound: true,
-        },
-        trigger: null, // Show immediately
-      })
+      await notificationService.showHydrationNotification(
+        event.petName || 'Unknown Pet',
+        event.amount_ml,
+        event.pet_id || undefined
+      )
+
+      // Check if pet reached daily goal
+      if (event.pet_id) {
+        const stats = await this.getPetTodayStats(event.pet_id)
+        if (stats.totalMl >= stats.goalMl && stats.progressPercent >= 100) {
+          // Show goal achievement notification
+          await notificationService.showGoalAchievedNotification(
+            event.petName || 'Your pet',
+            stats.goalMl
+          )
+        }
+      }
     } catch (error) {
       console.error('Error showing notification:', error)
     }
@@ -331,15 +339,6 @@ class HydrationService {
     console.log('Unsubscribed from all hydration events')
   }
 }
-
-// Configure notifications
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-})
 
 export const hydrationService = new HydrationService()
 

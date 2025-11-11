@@ -3,17 +3,18 @@ import { StatusBar } from 'expo-status-bar'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { Linking, Alert } from 'react-native'
-import * as Notifications from 'expo-notifications'
 import AppNavigator from './src/navigation/AppNavigator'
 import { ThemeProvider, useAppTheme } from './src/theme'
 import { supabase } from './src/services/supabase'
 import { EmailVerificationService } from './src/services/EmailVerificationService'
 import { GoogleAuthService } from './src/services/GoogleAuthService'
+import { notificationService } from './src/services/NotificationService'
 
 const queryClient = new QueryClient()
 
 export default function App() {
   useEffect(() => {
+    // Initialize notification service
     setupNotifications()
     
     // Setup deep linking for email verification
@@ -21,21 +22,42 @@ export default function App() {
   }, [])
 
   const setupNotifications = async () => {
-    const { status } = await Notifications.requestPermissionsAsync()
-    if (status !== 'granted') {
-      console.log('Notification permissions not granted')
-      return
-    }
+    try {
+      // Initialize the notification service
+      await notificationService.initialize()
 
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-        shouldShowBanner: true,
-        shouldShowList: true,
-      }),
-    })
+      // Add listener for when notifications are received while app is foregrounded
+      const notificationListener = notificationService.addNotificationReceivedListener(
+        (notification) => {
+          console.log('📬 Notification received (foreground):', notification)
+        }
+      )
+
+      // Add listener for when user taps on a notification
+      const responseListener = notificationService.addNotificationResponseListener(
+        (response) => {
+          console.log('📬 Notification tapped:', response)
+          const data = response.notification.request.content.data
+
+          // Handle different notification types
+          if (data.type === 'hydration_event' && data.petId) {
+            // TODO: Navigate to pet details screen
+            console.log('Navigate to pet:', data.petId)
+          } else if (data.type === 'low_water_alert') {
+            // TODO: Navigate to devices screen
+            console.log('Navigate to devices')
+          }
+        }
+      )
+
+      // Cleanup listeners on unmount
+      return () => {
+        notificationListener.remove()
+        responseListener.remove()
+      }
+    } catch (error) {
+      console.error('Error setting up notifications:', error)
+    }
   }
 
   const setupDeepLinking = () => {
