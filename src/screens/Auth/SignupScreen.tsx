@@ -65,7 +65,7 @@ export default function SignupScreen({ navigation }: Props) {
   const passwordValue = watch('password', '')
   const passwordChecks = useMemo(
     () => [
-      { label: 'At least 6 characters', met: passwordValue.length >= 8 },
+      { label: 'At least 6 characters', met: passwordValue.length >= 6 },
       { label: 'Contains an uppercase letter', met: /[A-Z]/.test(passwordValue) },
       { label: 'Contains a number or symbol', met: /[\d\W]/.test(passwordValue) },
     ],
