@@ -75,7 +75,7 @@ export default function AddPetScreen() {
   const handleTakeMultiplePhotos = () => {
     Alert.alert(
       'Train AI Recognition',
-      'Training photos can be added after creating your pet.\n\n1. Save your pet first\n2. Open the pet details\n3. Tap "Train AI" to add 3 training photos\n\nThis helps the device recognize your pet from different angles!',
+      'Please save your pet first before training AI.\n\nAfter saving, you\'ll have the option to add 3 training photos from different angles to help the device recognize your pet!',
       [
         { text: 'OK', style: 'default' }
       ]
@@ -94,7 +94,7 @@ export default function AddPetScreen() {
 
     setLoading(true)
 
-        try {
+    try {
       console.log('Getting or creating household...')
       const householdId = await HouseholdService.getOrCreateHousehold()
       console.log('Household ID:', householdId)
@@ -123,9 +123,29 @@ export default function AddPetScreen() {
       }
 
       console.log('Pet inserted successfully:', pet)
-      Alert.alert('Success', 'Pet added successfully!', [
-        { text: 'OK', onPress: () => navigation.goBack() }
-      ])
+      
+      // Show success and offer to train AI
+      Alert.alert(
+        'Success! 🎉',
+        `${petData.name} has been added successfully!\n\nWould you like to train AI recognition now? (Recommended)`,
+        [
+          {
+            text: 'Later',
+            style: 'cancel',
+            onPress: () => navigation.goBack()
+          },
+          {
+            text: 'Train AI',
+            onPress: () => {
+              // Navigate to TrainAI screen with the newly created pet
+              (navigation as any).navigate('TrainAI', {
+                petId: pet.id,
+                petName: pet.name
+              })
+            }
+          }
+        ]
+      )
     } catch (error) {
       console.error('Save pet error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'

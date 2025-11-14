@@ -23,7 +23,7 @@ interface TrainAIRouteParams {
 export default function TrainAIScreen() {
   const navigation = useNavigation()
   const route = useRoute()
-  const { petId, petName } = route.params as TrainAIRouteParams
+  const params = route.params as TrainAIRouteParams | undefined
   const { theme } = useAppTheme()
   const styles = useThemedStyles(createStyles)
 
@@ -31,6 +31,35 @@ export default function TrainAIScreen() {
   const [photo2Uri, setPhoto2Uri] = useState<string | null>(null)
   const [photo3Uri, setPhoto3Uri] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+
+  // Validate required parameters
+  React.useEffect(() => {
+    if (!params?.petId || !params?.petName) {
+      Alert.alert(
+        'Missing Pet Information',
+        'Please save your pet first before training AI.',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack()
+          }
+        ]
+      )
+    }
+  }, [params, navigation])
+
+  // Early return with safe defaults if params are missing
+  if (!params?.petId || !params?.petName) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  const { petId, petName } = params
 
   const selectPhotoSource = (photoNumber: 1 | 2 | 3) => {
     Alert.alert(
@@ -108,23 +137,36 @@ export default function TrainAIScreen() {
           onPress: async () => {
             setUploading(true)
             try {
+              console.log('Starting upload for pet:', petId)
+              console.log('Number of photos to upload:', photoUris.length)
+              
               // Process and upload each photo
               const uploadResults = []
               
-              for (const uri of photoUris) {
+              for (let i = 0; i < photoUris.length; i++) {
+                const uri = photoUris[i]
+                console.log(`Uploading photo ${i + 1}/${photoUris.length}:`, uri)
+                
                 const result = await PhotoUploadService.processAndUploadImage(uri, petId, false)
+                
                 if (result) {
+                  console.log(`Photo ${i + 1} uploaded successfully:`, result)
                   uploadResults.push(result)
+                } else {
+                  console.error(`Photo ${i + 1} upload failed - received null result`)
                 }
               }
 
+              console.log('Upload results:', uploadResults.length, 'out of', photoUris.length, 'succeeded')
+
               if (uploadResults.length === 0) {
-                throw new Error('Failed to upload photos')
+                throw new Error('All photo uploads failed. Please check your internet connection and storage permissions.')
               }
 
               // Save all training photos to pet_photos table
               const { supabase } = require('../../services/supabase')
               
+              console.log('Preparing to save photo records to database')
               const photoRecords = uploadResults.map((photo, index) => ({
                 pet_id: petId,
                 photo_url: photo.fullUrl,
@@ -133,15 +175,22 @@ export default function TrainAIScreen() {
                 features: null,
               }))
 
-              const { error } = await supabase
+              console.log('Inserting photo records:', photoRecords.length)
+              const { error: insertError } = await supabase
                 .from('pet_photos')
                 .insert(photoRecords)
 
-              if (error) throw error
+              if (insertError) {
+                console.error('Database insert error:', insertError)
+                throw new Error(`Failed to save photos to database: ${insertError.message}`)
+              }
+
+              console.log('Photo records saved successfully')
 
               // Update pet's main photo to the first training photo
               if (uploadResults[0]) {
-                await supabase
+                console.log('Updating pet main photo')
+                const { error: updateError } = await supabase
                   .from('pets')
                   .update({
                     photo_url: uploadResults[0].fullUrl,
@@ -149,8 +198,14 @@ export default function TrainAIScreen() {
                     ml_image_url: uploadResults[0].mlUrl,
                   })
                   .eq('id', petId)
+
+                if (updateError) {
+                  console.error('Pet update error:', updateError)
+                  // Don't throw - the photos are uploaded, just the main photo update failed
+                }
               }
 
+              console.log('All operations completed successfully')
               Alert.alert(
                 'Success! 🎉',
                 `${uploadResults.length} training photo${uploadResults.length > 1 ? 's' : ''} uploaded successfully!\n\n${petName} can now be recognized by the device.`,
@@ -163,7 +218,12 @@ export default function TrainAIScreen() {
               )
             } catch (error) {
               console.error('Upload error:', error)
-              Alert.alert('Error', 'Failed to upload training photos. Please try again.')
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+              Alert.alert(
+                'Upload Failed',
+                `${errorMessage}\n\nPlease try again or check:\n• Internet connection\n• Storage permissions\n• Supabase storage bucket`,
+                [{ text: 'OK' }]
+              )
             } finally {
               setUploading(false)
             }

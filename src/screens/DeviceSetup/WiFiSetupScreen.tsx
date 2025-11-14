@@ -114,7 +114,45 @@ export default function WiFiSetupScreen() {
         throw new Error('Supabase credentials not configured')
       }
 
-      // Prepare credentials
+      // Create device in Supabase BEFORE provisioning to get device UUID
+      setCurrentStep('Creating device record...')
+      const displayName = deviceDisplayName.trim() || deviceName || `Pet Fountain ${deviceId.slice(-6)}`
+      
+      console.log('📡 Creating device in Supabase...')
+      let deviceUuid: string
+      
+      // Check if device already exists
+      const existingDevice = await deviceService.isDeviceRegistered(deviceId)
+      if (existingDevice) {
+        console.log('ℹ️  Device already registered, fetching existing record')
+        const { data: existingDeviceData } = await supabase
+          .from('devices')
+          .select('id')
+          .eq('device_hardware_id', deviceId)
+          .single()
+        
+        if (!existingDeviceData) {
+          throw new Error('Failed to fetch existing device')
+        }
+        deviceUuid = existingDeviceData.id
+        console.log('✓ Using existing device UUID:', deviceUuid)
+      } else {
+        console.log('📡 Registering new device:', {
+          householdId: memberData.household_id,
+          deviceId,
+          displayName
+        })
+        
+        const newDevice = await deviceService.registerDevice(
+          memberData.household_id,
+          deviceId,
+          displayName
+        )
+        deviceUuid = newDevice.id
+        console.log('✓ Created new device with UUID:', deviceUuid)
+      }
+
+      // Prepare credentials with device UUID
       const credentials: DeviceCredentials = {
         wifiSSID: wifiSSID.trim(),
         wifiPassword: wifiPassword.trim(),
@@ -122,6 +160,7 @@ export default function WiFiSetupScreen() {
         supabaseKey: supabaseAnonKey,
         userId: user.id,
         householdId: memberData.household_id,
+        deviceId: deviceUuid,
       }
 
       // Send credentials to device via BLE with status callbacks
@@ -134,17 +173,7 @@ export default function WiFiSetupScreen() {
           console.warn('⚠️  Provisioning timeout - proceeding anyway')
           provisioningFinished = true
           try {
-            const displayName = deviceDisplayName.trim() || deviceName
-            setCurrentStep('Registering device...')
-            console.log('📡 Registering device (timeout fallback)...')
-            
-            await deviceService.registerDevice(
-              memberData.household_id,
-              deviceId,
-              displayName
-            )
-            
-            console.log('✅ Device registered (timeout fallback)')
+            console.log('⚠️  Timeout reached - device already registered, navigating...')
             
             try {
               await bleService.disconnect()
@@ -216,34 +245,10 @@ export default function WiFiSetupScreen() {
               // Let the subscription handle disconnection naturally.
               console.log('ℹ️  Device restarting - letting BLE handle disconnection naturally')
               
-              // Proceed with device registration immediately
-              // Don't try to disconnect - device is already restarting
-              setTimeout(async () => {
+              // Device already registered before provisioning, just navigate to success
+              setTimeout(() => {
                 try {
-                  console.log('📝 Starting device registration...')
-                  setCurrentStep('Registering device in cloud...')
-                  const displayName = deviceDisplayName.trim() || deviceName
-                  
-                  console.log('📡 Checking if device already exists...')
-                  const existingDevice = await deviceService.isDeviceRegistered(deviceId)
-                  
-                  if (existingDevice) {
-                    console.log('ℹ️  Device already registered, skipping registration')
-                  } else {
-                    console.log('📡 Registering device:', {
-                      householdId: memberData.household_id,
-                      deviceId,
-                      displayName
-                    })
-                    
-                    await deviceService.registerDevice(
-                      memberData.household_id,
-                      deviceId,
-                      displayName
-                    )
-                  }
-
-                  console.log('✅ Device registered successfully')
+                  console.log('✅ Provisioning complete!')
                   setCurrentStep('Complete!')
                   
                   // Navigate to success screen
@@ -268,57 +273,13 @@ export default function WiFiSetupScreen() {
                       }
                     }
                   }, 500)
-                } catch (regError: any) {
-                  console.error('❌ Registration error:', regError)
-                  console.error('   Error details:', JSON.stringify(regError, null, 2))
-                  
-                // Check if device was already registered (duplicate key error)
-                const errorMessage = regError?.message || ''
-                const errorCode = regError?.code || ''
-                if (errorMessage.includes('duplicate') || 
-                    errorMessage.includes('unique') || 
-                    errorMessage.includes('already exists') ||
-                    errorCode === '23505') {  // PostgreSQL duplicate key error code
-                  console.log('ℹ️  Device already registered - navigating to device list')
-                  
-                  // Device is already registered, just navigate to success
-                  // Don't show alert, just navigate directly
-                  try {
-                    console.log('🧭 Navigating to SetupComplete screen (device already exists)...')
-                    navigation.replace('SetupComplete', { 
-                      deviceId,
-                      deviceName: displayName 
-                    })
-                  } catch (navError) {
-                    console.error('❌ Navigation error:', navError)
-                    try {
-                      navigation.navigate('DeviceList')
-                    } catch (fallbackError) {
-                      Alert.alert('Success', 'Device already registered!', [
-                        { text: 'OK', onPress: () => navigation.goBack() }
-                      ])
-                    }
-                  }
-                } else {
-                    Alert.alert(
-                      'Warning', 
-                      'Device provisioned but failed to register. Please try adding it again from device list.',
-                      [
-                        { 
-                          text: 'OK', 
-                          onPress: () => {
-                            try {
-                              navigation.goBack()
-                            } catch (navError) {
-                              console.error('Navigation error:', navError)
-                            }
-                          }
-                        }
-                      ]
-                    )
-                  }
+                } catch (error: any) {
+                  console.error('❌ Navigation error:', error)
+                  Alert.alert('Success', 'Device provisioned successfully!', [
+                    { text: 'OK', onPress: () => navigation.goBack() }
+                  ])
                 }
-              }, 500) // Reduced delay - device registration should happen quickly
+              }, 500)
             }
           } catch (statusError) {
             // Catch any errors in status callback to prevent crashes

@@ -49,12 +49,17 @@ export class PhotoUploadService {
     saveToDatabase: boolean = true
   ): Promise<UploadResult | null> {
     try {
+      console.log('Processing image:', imageUri)
+      console.log('Pet ID:', petId)
+      
       // Process images for different purposes
+      console.log('Processing images in 3 sizes...')
       const [fullImage, thumbnail, mlImage] = await Promise.all([
         this.processImage(imageUri, 800, 0.8),  // Full size for display
         this.processImage(imageUri, 200, 0.6),  // Thumbnail
         this.processImage(imageUri, 224, 0.9),  // ML model size (224x224 for MobileNet)
       ])
+      console.log('Image processing complete')
 
       // Upload all versions
       const timestamp = Date.now()
@@ -62,11 +67,18 @@ export class PhotoUploadService {
       const thumbPath = `${petId}/${timestamp}_thumb.jpg`
       const mlPath = `${petId}/${timestamp}_ml.jpg`
 
+      console.log('Uploading images to Supabase storage...')
       const [fullUpload, thumbUpload, mlUpload] = await Promise.all([
         this.uploadToSupabase(fullImage.uri, fullPath),
         this.uploadToSupabase(thumbnail.uri, thumbPath),
         this.uploadToSupabase(mlImage.uri, mlPath),
       ])
+
+      console.log('Upload results:', {
+        full: fullUpload ? 'success' : 'failed',
+        thumb: thumbUpload ? 'success' : 'failed',
+        ml: mlUpload ? 'success' : 'failed'
+      })
 
       if (fullUpload && thumbUpload && mlUpload) {
         // Extract features for recognition (optional - can be done server-side)
@@ -74,6 +86,7 @@ export class PhotoUploadService {
 
         // Save to database only if requested and pet exists
         if (saveToDatabase && !petId.startsWith('temp_')) {
+          console.log('Saving photo record to database')
           await this.savePhotoRecord(petId, fullUpload, thumbUpload, mlUpload, features)
         }
 
@@ -84,9 +97,18 @@ export class PhotoUploadService {
         }
       }
 
+      console.error('One or more uploads failed')
+      if (!fullUpload) console.error('Full image upload failed')
+      if (!thumbUpload) console.error('Thumbnail upload failed')
+      if (!mlUpload) console.error('ML image upload failed')
+      
       return null
     } catch (error) {
-      console.error('Upload error:', error)
+      console.error('ProcessAndUploadImage error:', error)
+      if (error instanceof Error) {
+        console.error('Error message:', error.message)
+        console.error('Error stack:', error.stack)
+      }
       return null
     }
   }
