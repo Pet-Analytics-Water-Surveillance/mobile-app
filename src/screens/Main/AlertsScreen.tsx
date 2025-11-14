@@ -77,6 +77,110 @@ export default function AlertsScreen() {
     loadAlerts()
   }, [loadAlerts])
 
+  // Set up real-time subscription for new alerts
+  useEffect(() => {
+    let channel: any = null
+
+    const setupSubscription = async () => {
+      try {
+        // Get current user's household
+        const { data: { user } } = await supabase.auth.getUser()
+        const { data: memberData } = await supabase
+          .from('household_members')
+          .select('household_id')
+          .eq('user_id', user?.id)
+          .single()
+
+        if (!memberData) return
+
+        // Subscribe to new alerts for this household
+        channel = supabase
+          .channel('hydration_alerts_realtime')
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'hydration_alerts',
+              filter: `household_id=eq.${memberData.household_id}`,
+            },
+            async (payload) => {
+              console.log('New alert received:', payload)
+              
+              const newAlert = payload.new as HydrationAlert
+
+              // Fetch pet information if available
+              if (newAlert.pet_id) {
+                const { data: petData } = await supabase
+                  .from('pets')
+                  .select('name, species')
+                  .eq('id', newAlert.pet_id)
+                  .single()
+
+                if (petData) {
+                  newAlert.pets = petData
+                }
+              }
+
+              // Add to the top of the list
+              setAlerts((prev) => [newAlert, ...prev])
+            }
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'hydration_alerts',
+              filter: `household_id=eq.${memberData.household_id}`,
+            },
+            (payload) => {
+              console.log('Alert updated:', payload)
+              const updatedAlert = payload.new as HydrationAlert
+
+              // Update the alert in the list
+              setAlerts((prev) =>
+                prev.map((alert) =>
+                  alert.id === updatedAlert.id ? { ...alert, ...updatedAlert } : alert
+                )
+              )
+            }
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'DELETE',
+              schema: 'public',
+              table: 'hydration_alerts',
+              filter: `household_id=eq.${memberData.household_id}`,
+            },
+            (payload) => {
+              console.log('Alert deleted:', payload)
+              const deletedAlert = payload.old as HydrationAlert
+
+              // Remove from the list
+              setAlerts((prev) => prev.filter((alert) => alert.id !== deletedAlert.id))
+            }
+          )
+          .subscribe((status) => {
+            console.log('Alerts subscription status:', status)
+          })
+      } catch (error) {
+        console.error('Error setting up alerts subscription:', error)
+      }
+    }
+
+    setupSubscription()
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (channel) {
+        channel.unsubscribe()
+        console.log('Unsubscribed from alerts')
+      }
+    }
+  }, [])
+
   const onRefresh = async () => {
     setRefreshing(true)
     await loadAlerts()
