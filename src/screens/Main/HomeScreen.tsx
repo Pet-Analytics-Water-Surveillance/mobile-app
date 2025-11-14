@@ -211,7 +211,13 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Your Pets</Text>
-            <TouchableOpacity>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("Settings", {
+                  screen: "PetManagement",
+                })
+              }
+            >
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
           </View>
@@ -223,7 +229,18 @@ export default function HomeScreen() {
             style={styles.petsScrollView}
           >
             {pets.map((pet) => (
-              <PetHydrationCard key={pet.id} pet={pet} />
+              <TouchableOpacity
+                key={pet.id}
+                activeOpacity={0.85}
+                onPress={() =>
+                  navigation.navigate("Settings", {
+                    screen: "PetEdit",
+                    params: { petId: pet.id },
+                  })
+                }
+              >
+                <PetHydrationCard pet={pet} />
+              </TouchableOpacity>
             ))}
 
             {/* Add Pet Card */}

@@ -41,6 +41,7 @@ export type SettingsStackParamList = {
   TermsPolicy: undefined
   HelpSupport: undefined
   About: undefined
+  Security: undefined
 }
 
 // Root Stack

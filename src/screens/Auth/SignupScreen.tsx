@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import {
   View,
   Text,
@@ -21,8 +21,16 @@ import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
 
 const schema = yup.object({
   email: yup.string().email('Invalid email').required('Email is required'),
-  password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
-  confirmPassword: yup.string().oneOf([yup.ref('password')], 'Passwords must match').required('Confirm password is required'),
+  password: yup
+    .string()
+    .min(6, 'Password must be at least 6 characters')
+    .matches(/[A-Z]/, 'Password must contain an uppercase letter')
+    .matches(/[\d\W]/, 'Password must contain a number or symbol')
+    .required('Password is required'),
+  confirmPassword: yup
+    .string()
+    .oneOf([yup.ref('password')], 'Passwords must match')
+    .required('Confirm password is required'),
   firstName: yup.string().required('First name is required'),
   lastName: yup.string().required('Last name is required'),
 })
@@ -38,7 +46,12 @@ export default function SignupScreen({ navigation }: Props) {
   const { theme } = useAppTheme()
   const styles = useThemedStyles(createStyles)
 
-  const { control, handleSubmit, formState: { errors } } = useForm({
+  const {
+    control,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
       email: '',
@@ -48,6 +61,16 @@ export default function SignupScreen({ navigation }: Props) {
       lastName: '',
     },
   })
+
+  const passwordValue = watch('password', '')
+  const passwordChecks = useMemo(
+    () => [
+      { label: 'At least 6 characters', met: passwordValue.length >= 6 },
+      { label: 'Contains an uppercase letter', met: /[A-Z]/.test(passwordValue) },
+      { label: 'Contains a number or symbol', met: /[\d\W]/.test(passwordValue) },
+    ],
+    [passwordValue]
+  )
 
   const onSubmit = async (data: any) => {
     setLoading(true)
@@ -182,6 +205,25 @@ export default function SignupScreen({ navigation }: Props) {
             )}
           />
           {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
+          <View style={styles.passwordRequirements}>
+            {passwordChecks.map((check) => (
+              <View key={check.label} style={styles.requirementRow}>
+                <Ionicons
+                  name={check.met ? 'checkmark-circle' : 'ellipse-outline'}
+                  size={16}
+                  color={check.met ? theme.colors.success : theme.colors.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.requirementText,
+                    check.met && { color: theme.colors.success, fontWeight: '600' },
+                  ]}
+                >
+                  {check.label}
+                </Text>
+              </View>
+            ))}
+          </View>
 
           <Controller
             control={control}
@@ -303,6 +345,20 @@ const createStyles = (theme: AppTheme) =>
       fontSize: 12,
       marginBottom: 10,
       marginLeft: 5,
+    },
+    passwordRequirements: {
+      marginBottom: 10,
+      gap: 6,
+      paddingLeft: 5,
+    },
+    requirementRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    requirementText: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
     },
     signupButton: {
       backgroundColor: theme.colors.primary,

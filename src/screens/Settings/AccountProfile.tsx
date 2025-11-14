@@ -371,14 +371,6 @@ export default function AccountProfile({ navigation }: Props) {
           </TouchableOpacity>
         </View>
 
-        {/* Change Password */}
-        <View style={[styles.card, { borderColor: theme.colors.danger }]}> 
-          <TouchableOpacity style={[styles.btn, { borderColor: theme.colors.danger }]} onPress={() => console.log('Change password')}>
-            <Ionicons name="key-outline" size={18} color={theme.colors.danger} />
-            <Text style={styles.dangerText}>Change Password</Text>
-          </TouchableOpacity>
-        </View>
-
         <View style={{ height: 28 }} />
       </ScrollView>
       
@@ -510,7 +502,6 @@ const createStyles = (theme: AppTheme) =>
     },
     btnTextSecondary: { fontWeight: '700', color: theme.colors.text },
     btnTextPrimary: { fontWeight: '700', color: theme.colors.onPrimary },
-    dangerText: { fontWeight: '700', color: theme.colors.danger },
     householdInfo: { marginTop: 12, gap: 8 },
     householdItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     householdText: { color: theme.colors.textSecondary, fontSize: 14 },

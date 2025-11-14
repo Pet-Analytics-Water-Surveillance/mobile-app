@@ -34,6 +34,7 @@ import HouseholdInvites from "../screens/Settings/HouseholdInvites";
 import AboutScreen from "../screens/Settings/AboutScreen";
 import HelpSupportScreen from "../screens/Settings/HelpSupportScreen";
 import TermsPolicyScreen from "../screens/Settings/TermsPolicyScreen";
+import SecurityScreen from "../screens/Settings/SecurityScreen";
 import { useAppTheme } from "../theme";
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -72,6 +73,11 @@ function SettingsNavigator() {
         name="Profile"
         component={AccountProfile}
         options={{ title: "Profile" }}
+      />
+      <SettingsStack.Screen
+        name="Security"
+        component={SecurityScreen}
+        options={{ title: "Security" }}
       />
       <SettingsStack.Screen
         name="HouseholdInvites"
