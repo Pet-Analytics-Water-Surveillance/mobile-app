@@ -45,7 +45,12 @@ export default function SettingsScreen() {
     showArrow = true,
     rightComponent,
   }: any) => (
-    <TouchableOpacity style={styles.settingItem} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity 
+      style={styles.settingItem} 
+      onPress={onPress} 
+      activeOpacity={0.8}
+      disabled={!onPress || !!rightComponent}
+    >
       <View style={styles.settingIcon}>
         <Ionicons name={icon} size={24} color={theme.colors.primary} />
       </View>
@@ -66,7 +71,7 @@ export default function SettingsScreen() {
         <Text style={styles.title}>Settings</Text>
       </View>
 
-      <ScrollView>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Account Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
@@ -199,6 +204,9 @@ const createStyles = (theme: AppTheme) =>
       fontSize: 34,
       fontWeight: 'bold',
       color: theme.colors.text,
+    },
+    scrollContent: {
+      paddingBottom: 100,
     },
     section: {
       marginTop: 30,

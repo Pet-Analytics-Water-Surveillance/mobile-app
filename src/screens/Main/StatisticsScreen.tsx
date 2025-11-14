@@ -421,7 +421,10 @@ export default function StatisticsScreen(): React.ReactElement {
         ))}
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView 
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+      >
         {/* Summary Stats */}
         <View style={styles.statsGrid}>
           <StatCard
@@ -575,6 +578,9 @@ const createStyles = (theme: AppTheme) =>
     content: {
       flex: 1,
       paddingHorizontal: 20,
+    },
+    contentContainer: {
+      paddingBottom: 100,
     },
     statsGrid: {
       marginTop: 20,

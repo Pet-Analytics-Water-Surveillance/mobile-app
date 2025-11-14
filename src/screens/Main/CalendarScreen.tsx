@@ -268,7 +268,10 @@ export default function CalendarScreen() {
         style={styles.calendar}
       />
 
-      <ScrollView style={styles.eventsList}>
+      <ScrollView 
+        style={styles.eventsList}
+        contentContainerStyle={styles.eventsListContent}
+      >
         <View style={styles.dateHeader}>
           <Text style={styles.dateTitle}>
             {parseLocalDateKey(selectedDate).toLocaleDateString('en-US', {
@@ -330,6 +333,9 @@ const createStyles = (theme: AppTheme) =>
     eventsList: {
       flex: 1,
       paddingHorizontal: 20,
+    },
+    eventsListContent: {
+      paddingBottom: 100,
     },
     dateHeader: {
       marginTop: 20,

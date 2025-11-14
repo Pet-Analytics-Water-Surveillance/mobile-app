@@ -130,7 +130,7 @@ class BLEService {
       let scanCount = 0
 
       this.scanSubscription = this.manager.startDeviceScan(
-        [SERVICE_UUID], // Scan for devices advertising our service UUID (required for iOS)
+        null, // Scan for all devices - filtering by name works better cross-platform
         { allowDuplicates: false },
         (error, device) => {
           if (error) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,160 +7,166 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
-} from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
-import { supabase } from '../../services/supabase'
-import type { Database } from '../../services/supabase'
-import { useNavigation, CommonActions } from '@react-navigation/native'
-import type { HomeScreenNavigationProp } from '../../navigation/types'
-import PetHydrationCard from '../../components/specific/PetHydrationCard'
-import QuickStats from '../../components/specific/QuickStats'
-import RecentActivity from '../../components/specific/RecentActivity'
-import { AppTheme, useAppTheme, useThemedStyles, useRefreshControlColors } from '../../theme'
-import { hydrationService, HydrationEventWithPet } from '../../services/HydrationService'
-import * as Notifications from 'expo-notifications'
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { supabase } from "../../services/supabase";
+import type { Database } from "../../services/supabase";
+import { useNavigation, CommonActions } from "@react-navigation/native";
+import type { HomeScreenCompositeNavigationProp } from "../../navigation/types";
+import PetHydrationCard from "../../components/specific/PetHydrationCard";
+import QuickStats from "../../components/specific/QuickStats";
+import RecentActivity from "../../components/specific/RecentActivity";
+import {
+  AppTheme,
+  useAppTheme,
+  useThemedStyles,
+  useRefreshControlColors,
+} from "../../theme";
+import {
+  hydrationService,
+  HydrationEventWithPet,
+} from "../../services/HydrationService";
 
-type Pet = Database['public']['Tables']['pets']['Row']
-type Household = Database['public']['Tables']['households']['Row']
+type Pet = Database["public"]["Tables"]["pets"]["Row"];
+type Household = Database["public"]["Tables"]["households"]["Row"];
 
 type TodayStats = {
-  totalWater: number
-  activeDevices: number
-  alerts: number
-}
+  totalWater: number;
+  activeDevices: number;
+  alerts: number;
+};
 
 export default function HomeScreen() {
-  const navigation = useNavigation<HomeScreenNavigationProp>()
-  const [refreshing, setRefreshing] = useState(false)
-  const [pets, setPets] = useState<Pet[]>([])
-  const [household, setHousehold] = useState<Household | null>(null)
+  const navigation = useNavigation<HomeScreenCompositeNavigationProp>();
+  const [refreshing, setRefreshing] = useState(false);
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [household, setHousehold] = useState<Household | null>(null);
   const [todayStats, setTodayStats] = useState<TodayStats>({
     totalWater: 0,
     activeDevices: 0,
     alerts: 0,
-  })
-  const { theme } = useAppTheme()
-  const styles = useThemedStyles(createStyles)
-  const refreshControlColors = useRefreshControlColors()
+  });
+  const { theme } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
+  const refreshControlColors = useRefreshControlColors();
 
   const getGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return 'Good Morning! 👋'
-    if (hour < 17) return 'Good Afternoon! 👋'
-    return 'Good Evening! 👋'
-  }
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning! 👋";
+    if (hour < 17) return "Good Afternoon! 👋";
+    return "Good Evening! 👋";
+  };
 
   const loadDashboardData = useCallback(async () => {
     // Load household data
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: memberData }: { data: { household_id: string; households: Household } | null } = await supabase
-      .from('household_members')
-      .select('household_id, households(*)')
-      .eq('user_id', user?.id)
-      .single()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const {
+      data: memberData,
+    }: { data: { household_id: string; households: Household } | null } =
+      await supabase
+        .from("household_members")
+        .select("household_id, households(*)")
+        .eq("user_id", user?.id)
+        .single();
 
     if (memberData) {
-      setHousehold(memberData.households)
-      
+      setHousehold(memberData.households);
+
       // Load pets
       const { data: petsData }: { data: Pet[] | null } = await supabase
-        .from('pets')
-        .select('*')
-        .eq('household_id', memberData.household_id)
-      
-      setPets(petsData || [])
+        .from("pets")
+        .select("*")
+        .eq("household_id", memberData.household_id);
+
+      setPets(petsData || []);
 
       // Load today's stats
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      
-      const { data: events }: { data: Array<{ amount_ml: number }> | null } = await supabase
-        .from('hydration_events')
-        .select('amount_ml')
-        .gte('timestamp', today.toISOString())
-      
-      const totalWater = (events?.reduce((sum, e) => sum + e.amount_ml, 0)) || 0
-      
-      const { data: devices }: { data: Array<{ is_online: boolean }> | null } = await supabase
-        .from('devices')
-        .select('is_online')
-        .eq('household_id', memberData.household_id)
-      
-      const activeDevices = devices?.filter((d) => d.is_online).length || 0
-      
-      const { data: alerts }: { data: Array<{ id: string }> | null } = await supabase
-        .from('hydration_alerts')
-        .select('id')
-        .eq('household_id', memberData.household_id)
-        .is('acknowledged_at', null)
-      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { data: events }: { data: Array<{ amount_ml: number }> | null } =
+        await supabase
+          .from("hydration_events")
+          .select("amount_ml")
+          .gte("timestamp", today.toISOString());
+
+      const totalWater = events?.reduce((sum, e) => sum + e.amount_ml, 0) || 0;
+
+      const { data: devices }: { data: Array<{ is_online: boolean }> | null } =
+        await supabase
+          .from("devices")
+          .select("is_online")
+          .eq("household_id", memberData.household_id);
+
+      const activeDevices = devices?.filter((d) => d.is_online).length || 0;
+
+      const { data: alerts }: { data: Array<{ id: string }> | null } =
+        await supabase
+          .from("hydration_alerts")
+          .select("id")
+          .eq("household_id", memberData.household_id)
+          .is("acknowledged_at", null);
+
       setTodayStats({
         totalWater,
         activeDevices,
         alerts: alerts?.length || 0,
-      })
+      });
 
       // Set up real-time hydration event subscription
-      setupRealtimeSubscription(memberData.household_id)
+      setupRealtimeSubscription(memberData.household_id);
     }
-  }, [])
+  }, []);
 
   const setupRealtimeSubscription = (householdId: string) => {
     // Subscribe to new hydration events
     const unsubscribe = hydrationService.subscribeToHydrationEvents(
       householdId,
       (event: HydrationEventWithPet) => {
-        console.log('New hydration event received:', event)
-        
+        console.log("New hydration event received:", event);
+
         // Update today's stats
         setTodayStats((prev) => ({
           ...prev,
           totalWater: prev.totalWater + event.amount_ml,
-        }))
+        }));
 
         // Show in-app alert
         Alert.alert(
-          '💧 Pet Drank Water',
+          "💧 Pet Drank Water",
           `${event.petName} just drank ${event.amount_ml}ml of water!`,
-          [{ text: 'OK' }]
-        )
+          [{ text: "OK" }],
+        );
 
         // Refresh dashboard data
-        loadDashboardData()
-      }
-    )
+        loadDashboardData();
+      },
+    );
 
     // Store unsubscribe function
-    return unsubscribe
-  }
+    return unsubscribe;
+  };
 
   useEffect(() => {
-    // Request notification permissions
-    const requestNotificationPermissions = async () => {
-      const { status } = await Notifications.requestPermissionsAsync()
-      if (status !== 'granted') {
-        console.warn('Notification permissions not granted')
-      }
-    }
-    requestNotificationPermissions()
-
-    loadDashboardData()
+    loadDashboardData();
 
     // Cleanup subscriptions on unmount
     return () => {
-      hydrationService.unsubscribeAll()
-    }
-  }, [loadDashboardData])
+      hydrationService.unsubscribeAll();
+    };
+  }, [loadDashboardData]);
 
   const onRefresh = async () => {
-    setRefreshing(true)
-    await loadDashboardData()
-    setRefreshing(false)
-  }
+    setRefreshing(true);
+    await loadDashboardData();
+    setRefreshing(false);
+  };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -169,7 +175,9 @@ export default function HomeScreen() {
             onRefresh={onRefresh}
             tintColor={refreshControlColors.tintColor}
             colors={refreshControlColors.colors}
-            progressBackgroundColor={refreshControlColors.progressBackgroundColor}
+            progressBackgroundColor={
+              refreshControlColors.progressBackgroundColor
+            }
           />
         }
       >
@@ -179,8 +187,15 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>{getGreeting()}</Text>
             <Text style={styles.householdName}>Dashboard</Text>
           </View>
-          <TouchableOpacity style={styles.notificationButton}>
-            <Ionicons name="notifications-outline" size={24} color={theme.colors.text} />
+          <TouchableOpacity
+            style={styles.notificationButton}
+            onPress={() => navigation.navigate("Alerts")}
+          >
+            <Ionicons
+              name="notifications-outline"
+              size={24}
+              color={theme.colors.text}
+            />
             {todayStats.alerts > 0 && (
               <View style={styles.notificationBadge}>
                 <Text style={styles.badgeText}>{todayStats.alerts}</Text>
@@ -198,28 +213,28 @@ export default function HomeScreen() {
             <Text style={styles.sectionTitle}>Your Pets</Text>
             <TouchableOpacity
               onPress={() =>
-                navigation.navigate('Settings', {
-                  screen: 'PetManagement',
+                navigation.navigate("Settings", {
+                  screen: "PetManagement",
                 })
               }
             >
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
           </View>
-          
-          <ScrollView 
-            horizontal 
+
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.petsScrollContainer}
             style={styles.petsScrollView}
           >
-            {pets.map(pet => (
+            {pets.map((pet) => (
               <TouchableOpacity
                 key={pet.id}
                 activeOpacity={0.85}
                 onPress={() =>
-                  navigation.navigate('Settings', {
-                    screen: 'PetEdit',
+                  navigation.navigate("Settings", {
+                    screen: "PetEdit",
                     params: { petId: pet.id },
                   })
                 }
@@ -227,18 +242,22 @@ export default function HomeScreen() {
                 <PetHydrationCard pet={pet} />
               </TouchableOpacity>
             ))}
-            
+
             {/* Add Pet Card */}
             <TouchableOpacity
               style={styles.addPetCard}
               onPress={() =>
-                navigation.navigate('Settings', {
-                  screen: 'PetAdd',
+                navigation.navigate("Settings", {
+                  screen: "PetAdd",
                   params: { fromHome: true },
                 })
               }
             >
-              <Ionicons name="add-circle-outline" size={48} color={theme.colors.primary} />
+              <Ionicons
+                name="add-circle-outline"
+                size={48}
+                color={theme.colors.primary}
+              />
               <Text style={styles.addPetText}>Add Pet</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -256,41 +275,51 @@ export default function HomeScreen() {
             style={styles.actionButton}
             onPress={() => {
               // Navigate to Settings tab and DeviceSetup screen with fromHome flag
-              navigation.navigate('Settings', {
-                screen: 'DeviceSetup',
+              navigation.navigate("Settings", {
+                screen: "DeviceSetup",
                 params: { fromHome: true },
-              })
+              });
             }}
           >
-            <Ionicons name="add-outline" size={24} color={theme.colors.onPrimary} />
+            <Ionicons
+              name="add-outline"
+              size={24}
+              color={theme.colors.onPrimary}
+            />
             <Text style={styles.actionButtonText}>Add Device</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.secondaryButton]}
-            onPress={() => navigation.navigate('Statistics')}
+            onPress={() => navigation.navigate("Statistics")}
           >
-            <Ionicons name="bar-chart-outline" size={24} color={theme.colors.primary} />
-            <Text style={[styles.actionButtonText, styles.secondaryButtonText]}>View Stats</Text>
+            <Ionicons
+              name="bar-chart-outline"
+              size={24}
+              color={theme.colors.primary}
+            />
+            <Text style={[styles.actionButtonText, styles.secondaryButtonText]}>
+              View Stats
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
-  )
+  );
 }
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     scrollContent: {
-      paddingBottom: 32,
+      paddingBottom: 100,
     },
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
     },
     header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
       paddingHorizontal: 20,
       paddingVertical: 20,
     },
@@ -300,45 +329,45 @@ const createStyles = (theme: AppTheme) =>
     },
     householdName: {
       fontSize: 24,
-      fontWeight: 'bold',
+      fontWeight: "bold",
       color: theme.colors.text,
       marginTop: 4,
     },
     notificationButton: {
-      position: 'relative',
+      position: "relative",
     },
     notificationBadge: {
-      position: 'absolute',
+      position: "absolute",
       top: -5,
       right: -5,
       backgroundColor: theme.colors.danger,
       borderRadius: 10,
       width: 20,
       height: 20,
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: "center",
+      alignItems: "center",
     },
     badgeText: {
       color: theme.colors.onPrimary,
       fontSize: 10,
-      fontWeight: 'bold',
+      fontWeight: "bold",
     },
     section: {
-      marginVertical: 20,
+      marginVertical: 10,
     },
     sectionBody: {
       paddingHorizontal: 20,
     },
     sectionHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
       paddingHorizontal: 20,
       marginBottom: 15,
     },
     sectionTitle: {
       fontSize: 20,
-      fontWeight: 'bold',
+      fontWeight: "bold",
       color: theme.colors.text,
     },
     seeAll: {
@@ -358,29 +387,29 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor: theme.colors.surface,
       borderRadius: 15,
       marginHorizontal: 10,
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: "center",
+      alignItems: "center",
       borderWidth: 2,
       borderColor: theme.colors.border,
-      borderStyle: 'dashed',
+      borderStyle: "dashed",
     },
     addPetText: {
       marginTop: 10,
       color: theme.colors.primary,
       fontSize: 14,
-      fontWeight: '600',
+      fontWeight: "600",
     },
     quickActions: {
-      flexDirection: 'row',
+      flexDirection: "row",
       paddingHorizontal: 20,
       paddingVertical: 20,
       gap: 15,
     },
     actionButton: {
       flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
       backgroundColor: theme.colors.primary,
       paddingVertical: 15,
       borderRadius: 12,
@@ -395,6 +424,6 @@ const createStyles = (theme: AppTheme) =>
     actionButtonText: {
       color: theme.colors.onPrimary,
       fontSize: 16,
-      fontWeight: '600',
+      fontWeight: "600",
     },
-  })
+  });
