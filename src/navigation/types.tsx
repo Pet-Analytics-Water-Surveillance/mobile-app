@@ -16,6 +16,11 @@ export type MainTabParamList = {
   Calendar: undefined
   Statistics: undefined
   Settings: NavigatorScreenParams<SettingsStackParamList>
+}
+
+// Main Stack (for modals like Alerts)
+export type MainStackParamList = {
+  MainTabs: undefined
   Alerts: undefined
 }
 
@@ -50,3 +55,10 @@ export type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 
 export type HomeScreenNavigationProp = BottomTabNavigationProp<MainTabParamList, 'Home'>
 export type SettingsScreenNavigationProp = StackNavigationProp<SettingsStackParamList, 'SettingsList'>
 export type AccountProfileNavigationProp = StackNavigationProp<SettingsStackParamList, 'Profile'>
+
+// Composite navigation for accessing parent navigators
+import type { CompositeNavigationProp } from '@react-navigation/native'
+export type HomeScreenCompositeNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<MainTabParamList, 'Home'>,
+  StackNavigationProp<MainStackParamList>
+>
