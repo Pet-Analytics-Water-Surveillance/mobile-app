@@ -7,6 +7,7 @@ import HomeScreen from '../screens/Main/HomeScreen'
 import CalendarScreen from '../screens/Main/CalendarScreen'
 import StatisticsScreen from '../screens/Main/StatisticsScreen'
 import SettingsScreen from '../screens/Main/SettingsScreen'
+import AlertsScreen from '../screens/Main/AlertsScreen'
 import PetManagementScreen from '../screens/PetManagement/PetListScreen'
 import AddPetScreen from '../screens/PetManagement/AddPetScreen'
 import EditPetScreen from '../screens/PetManagement/EditPetScreen'
@@ -196,6 +197,14 @@ export default function MainNavigator() {
       <Tab.Screen name="Calendar" component={CalendarScreen} />
       <Tab.Screen name="Statistics" component={StatisticsScreen} />
       <Tab.Screen name="Settings" component={SettingsNavigator} />
+      <Tab.Screen 
+        name="Alerts" 
+        component={AlertsScreen}
+        options={{
+          tabBarButton: () => null, // Hide from tab bar
+          tabBarStyle: { display: 'none' },
+        }}
+      />
     </Tab.Navigator>
   )
 }

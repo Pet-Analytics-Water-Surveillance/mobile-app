@@ -169,7 +169,10 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>{getGreeting()}</Text>
             <Text style={styles.householdName}>Dashboard</Text>
           </View>
-          <TouchableOpacity style={styles.notificationButton}>
+          <TouchableOpacity 
+            style={styles.notificationButton}
+            onPress={() => navigation.navigate('Alerts')}
+          >
             <Ionicons name="notifications-outline" size={24} color={theme.colors.text} />
             {todayStats.alerts > 0 && (
               <View style={styles.notificationBadge}>

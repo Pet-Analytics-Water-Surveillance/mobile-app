@@ -16,6 +16,7 @@ export type MainTabParamList = {
   Calendar: undefined
   Statistics: undefined
   Settings: NavigatorScreenParams<SettingsStackParamList>
+  Alerts: undefined
 }
 
 // Settings Stack
