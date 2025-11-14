@@ -2,7 +2,7 @@ import React from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createStackNavigator } from '@react-navigation/stack'
 import { Ionicons } from '@expo/vector-icons'
-import { TouchableOpacity } from 'react-native'
+import { TouchableOpacity, Platform } from 'react-native'
 import HomeScreen from '../screens/Main/HomeScreen'
 import CalendarScreen from '../screens/Main/CalendarScreen'
 import StatisticsScreen from '../screens/Main/StatisticsScreen'
@@ -150,7 +150,7 @@ function SettingsNavigator() {
 }
 
 export default function MainNavigator() {
-  const { theme } = useAppTheme()
+  const { theme, isDarkMode } = useAppTheme()
 
   return (
     <Tab.Navigator
@@ -180,11 +180,39 @@ export default function MainNavigator() {
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.muted,
         tabBarStyle: {
-          backgroundColor: theme.colors.tabBarBackground,
-          borderTopColor: theme.colors.tabBarBorder,
+          position: 'absolute',
+          bottom: Platform.OS === 'ios' ? 20 : 16,
+          left: 20,
+          right: 20,
+          elevation: 8,
+          backgroundColor: Platform.OS === 'ios' 
+            ? isDarkMode ? 'rgba(30, 30, 30, 0.8)' : 'rgba(255, 255, 255, 0.8)'
+            : theme.colors.tabBarBackground,
+          borderRadius: 24,
+          height: Platform.OS === 'ios' ? 70 : 65,
+          paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+          paddingTop: 10,
+          borderTopWidth: 0,
+          shadowColor: '#000',
+          shadowOffset: {
+            width: 0,
+            height: 4,
+          },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+          ...Platform.select({
+            ios: {
+              backdropFilter: 'blur(20px)',
+            },
+          }),
         },
         tabBarLabelStyle: {
-          fontWeight: '500',
+          fontWeight: '600',
+          fontSize: 11,
+          marginTop: -5,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 5,
         },
         headerShown: false,
         tabBarHideOnKeyboard: true,

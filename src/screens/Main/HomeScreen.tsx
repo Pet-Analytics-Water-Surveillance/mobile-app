@@ -257,7 +257,7 @@ export default function HomeScreen() {
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     scrollContent: {
-      paddingBottom: 32,
+      paddingBottom: 100,
     },
     container: {
       flex: 1,
