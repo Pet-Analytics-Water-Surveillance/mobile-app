@@ -10,7 +10,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
@@ -43,6 +43,8 @@ export default function EditPetScreen() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const { theme } = useAppTheme()
   const styles = useThemedStyles(createStyles)
+  const insets = useSafeAreaInsets()
+  const contentPaddingBottom = insets.bottom + 60
   
   const [petData, setPetData] = useState({
     name: '',
@@ -208,8 +210,13 @@ export default function EditPetScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="never">
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="never"
+        contentContainerStyle={{ paddingBottom: contentPaddingBottom }}
+      >
         {/* Photo Section */}
         <View style={styles.photoSection}>
           <Text style={styles.sectionTitle}>Pet Photo</Text>

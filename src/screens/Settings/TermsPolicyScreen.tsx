@@ -7,7 +7,7 @@ import {
   Linking,
   TouchableOpacity,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
@@ -72,10 +72,12 @@ const POLICY_SECTIONS: PolicySection[] = [
 export default function TermsPolicyScreen() {
   const { theme } = useAppTheme()
   const styles = useThemedStyles(createStyles)
+  const insets = useSafeAreaInsets()
+  const contentPaddingBottom = React.useMemo(() => insets.bottom + 80, [insets.bottom])
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.contentContainer}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
+      <ScrollView contentContainerStyle={[styles.contentContainer, { paddingBottom: contentPaddingBottom }]}>
         <LinearGradient
           colors={[
             theme.mode === 'dark'

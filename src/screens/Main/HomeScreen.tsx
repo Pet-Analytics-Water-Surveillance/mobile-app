@@ -310,7 +310,7 @@ export default function HomeScreen() {
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     scrollContent: {
-      paddingBottom: 100,
+      paddingBottom: 30,
     },
     container: {
       flex: 1,
@@ -353,10 +353,11 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: "bold",
     },
     section: {
-      marginVertical: 10,
+      marginVertical: 15,
     },
     sectionBody: {
       paddingHorizontal: 20,
+      bottom: 22,
     },
     sectionHeader: {
       flexDirection: "row",
@@ -407,11 +408,12 @@ const createStyles = (theme: AppTheme) =>
     },
     actionButton: {
       flex: 1,
+      bottom: 55,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: theme.colors.primary,
-      paddingVertical: 15,
+      paddingVertical: 8,
       borderRadius: 12,
       gap: 8,
     },
