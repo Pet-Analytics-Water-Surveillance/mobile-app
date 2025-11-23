@@ -391,7 +391,7 @@ const createStyles = (theme: AppTheme) =>
     },
     container: {
       padding: 16,
-      paddingBottom: 40,
+      paddingBottom: 55,
       gap: 12,
     },
     title: {
