@@ -328,7 +328,7 @@ const createStyles = (theme: AppTheme) =>
     },
     fab: {
       position: 'absolute',
-      bottom: 20,
+      bottom: 95,
       right: 20,
       width: 56,
       height: 56,

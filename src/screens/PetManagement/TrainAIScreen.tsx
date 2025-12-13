@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { PhotoUploadService } from '../../services/PhotoUpload'
@@ -31,6 +31,8 @@ export default function TrainAIScreen() {
   const [photo2Uri, setPhoto2Uri] = useState<string | null>(null)
   const [photo3Uri, setPhoto3Uri] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const insets = useSafeAreaInsets()
+  const contentPaddingBottom = React.useMemo(() => insets.bottom + 50, [insets.bottom])
 
   const selectPhotoSource = (photoNumber: 1 | 2 | 3) => {
     Alert.alert(
@@ -220,7 +222,7 @@ export default function TrainAIScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[styles.contentContainer, { paddingBottom: contentPaddingBottom }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}

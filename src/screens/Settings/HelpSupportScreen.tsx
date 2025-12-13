@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
@@ -26,6 +26,8 @@ type SupportLink = {
 export default function HelpSupportScreen() {
   const { theme } = useAppTheme()
   const styles = useThemedStyles(createStyles)
+  const insets = useSafeAreaInsets()
+  const contentPaddingBottom = React.useMemo(() => insets.bottom + 80, [insets.bottom])
 
   const supportLinks: SupportLink[] = React.useMemo(
     () => [
@@ -60,7 +62,7 @@ export default function HelpSupportScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
-      <ScrollView contentContainerStyle={styles.contentContainer}>
+      <ScrollView contentContainerStyle={[styles.contentContainer, { paddingBottom: contentPaddingBottom }]}>
         <LinearGradient
           colors={[
             theme.mode === 'dark'

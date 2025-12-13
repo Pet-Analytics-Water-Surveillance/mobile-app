@@ -8,7 +8,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { AppTheme, useAppTheme, useThemedStyles } from '../../theme'
@@ -26,6 +26,8 @@ export default function AboutScreen() {
   const styles = useThemedStyles(createStyles)
   const { width } = useWindowDimensions()
   const isWideLayout = width >= 768
+  const insets = useSafeAreaInsets()
+  const contentPaddingBottom = React.useMemo(() => insets.bottom + 80, [insets.bottom])
 
   const gradientColors = React.useMemo<[string, string]>(
     () =>
@@ -38,7 +40,7 @@ export default function AboutScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <ScrollView
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[styles.contentContainer, { paddingBottom: contentPaddingBottom }]}
         contentInsetAdjustmentBehavior="never"
         automaticallyAdjustContentInsets={false}
         scrollIndicatorInsets={{ top: 0, bottom: 0 }}

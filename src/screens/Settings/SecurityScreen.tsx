@@ -265,6 +265,7 @@ const createStyles = (theme: AppTheme) =>
       flexDirection: 'row',
       gap: 12,
       padding: 10,
+      bottom: 7,
       borderRadius: 16,
       backgroundColor:
         theme.mode === 'dark'
