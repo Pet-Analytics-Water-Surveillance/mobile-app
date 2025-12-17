@@ -17,6 +17,7 @@ export interface DeviceCredentials {
   supabaseKey: string
   userId: string
   householdId: string
+  deviceId: string
 }
 
 export interface ScannedDevice {
@@ -564,28 +565,30 @@ class BLEService {
         await this.delay(100)
       }
 
-      // Step 3: Send User ID (triggers save and restart)
+      // Step 3: Send User ID, Household ID, and Device ID (triggers save and restart)
       if (this.provisioningComplete) {
         console.log('ℹ️  Skipping User ID step - provisioning already complete')
         return
       }
       
-      console.log('\n📡 Step 3: Sending user ID and household ID...')
+      console.log('\n📡 Step 3: Sending user ID, household ID, and device ID...')
       console.log(`   User ID: ${credentials.userId}`)
       console.log(`   Household ID: ${credentials.householdId}`)
+      console.log(`   Device ID: ${credentials.deviceId}`)
       try {
         await this.writeCharacteristic(USER_CHAR_UUID, {
           user_id: credentials.userId,
           household_id: credentials.householdId,
+          device_id: credentials.deviceId,
         })
-        console.log('✅ User ID and Household ID sent successfully - Device will save and restart')
+        console.log('✅ User ID, Household ID, and Device ID sent successfully - Device will save and restart')
       } catch (userError: any) {
         if (this.provisioningComplete) {
           console.log('ℹ️  User ID write error ignored - provisioning already complete')
           return
         }
-        console.error('❌ Failed to send user ID:', userError)
-        throw new Error(`Failed to send user ID: ${userError}`)
+        console.error('❌ Failed to send user credentials:', userError)
+        throw new Error(`Failed to send user credentials: ${userError}`)
       }
 
       // Wait for provisioning_complete status (firmware sends it before restart)

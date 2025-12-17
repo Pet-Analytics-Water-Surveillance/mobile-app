@@ -56,6 +56,7 @@ function SettingsNavigator() {
         color: theme.colors.text,
       },
       headerBackTitleVisible: false,
+      headerBackTitle: '',
     }),
     [theme],
   );
@@ -102,7 +103,30 @@ function SettingsNavigator() {
       <SettingsStack.Screen
         name="PetManagement"
         component={PetManagementScreen}
-        options={{ title: "My Pets" }}
+        options={({ navigation, route }) => ({
+          title: "My Pets",
+          headerLeft: () => (
+            <TouchableOpacity
+              style={{ paddingHorizontal: 10 }}
+              onPress={() => {
+                // Reset Settings stack to SettingsList first
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: "SettingsList" }],
+                });
+                // Then navigate to Home tab
+                const parent = navigation.getParent() as any;
+                parent?.navigate("Home");
+              }}
+            >
+              <Ionicons
+                name="chevron-back"
+                size={24}
+                color={theme.colors.primary}
+              />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <SettingsStack.Screen
         name="PetAdd"
@@ -408,7 +432,24 @@ function TabNavigator() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Calendar" component={CalendarScreen} />
       <Tab.Screen name="Statistics" component={StatisticsScreen} />
-      <Tab.Screen name="Settings" component={SettingsNavigator} />
+      <Tab.Screen 
+        name="Settings" 
+        component={SettingsNavigator}
+        listeners={({ navigation, route }) => ({
+          tabPress: (e) => {
+            // Get the state of the Settings navigator
+            const state = (route as any).state;
+            
+            // If we're not on the first screen (SettingsList), reset to it
+            if (state && state.index > 0) {
+              e.preventDefault();
+              navigation.navigate('Settings', {
+                screen: 'SettingsList',
+              });
+            }
+          },
+        })}
+      />
     </Tab.Navigator>
   );
 }
